@@ -1,0 +1,5 @@
+Set-Location E:\home
+.\.venv\Scripts\Activate.ps1
+Set-Location .\backend
+python -m pip install -r requirements.txt
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
