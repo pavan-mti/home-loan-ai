@@ -12,7 +12,7 @@ from .documents import STORAGE_ROOT, save_upload
 from .mapping_engine import MappingEngine
 from .ocr_engine import OCREngine
 from .report_generator import ReportGenerator
-from .template_parser import parse_template_docx
+from .template_parser import parse_template_docx, parse_template_pdf
 
 
 class TemplateService:
@@ -52,6 +52,30 @@ class TemplateService:
         )
         return template.to_dict()
 
+    def import_template(
+        self,
+        *,
+        template_key_id: str,
+        template_name: str,
+        template_bank: str,
+        upload: UploadFile,
+    ) -> dict[str, Any]:
+        saved_path = save_upload(upload, "templates")
+        suffix = saved_path.suffix.lower()
+        if suffix == ".pdf":
+            parsed_content = parse_template_pdf(saved_path)
+        else:
+            parsed_content = parse_template_docx(saved_path)
+        storage_url = f"/storage/{saved_path.relative_to(STORAGE_ROOT).as_posix()}"
+        template = self.repository.create_template(
+            template_key_id=template_key_id,
+            template_name=template_name,
+            template_bank=template_bank,
+            template_content_json=parsed_content,
+            original_docx_url=storage_url,
+        )
+        return template.to_dict()
+
     def list_templates(self) -> list[dict[str, Any]]:
         return [template.to_dict() for template in self.repository.list_templates()]
 
@@ -70,6 +94,14 @@ class TemplateService:
         template = self.repository.get_template(template_id)
         if template is None:
             return False
+        if template.original_docx_url:
+            url_path = template.original_docx_url.removeprefix("/storage/")
+            file_path = STORAGE_ROOT / url_path
+            if file_path.exists() and file_path.is_file():
+                try:
+                    file_path.unlink()
+                except Exception:
+                    pass
         self.repository.delete_template(template)
         return True
 
@@ -91,5 +123,19 @@ class TemplateService:
         template = self.repository.get_template(template_id)
         if template is None:
             raise ValueError("Template not found")
+        
+        from .report_generator import RenderableValue
+        
+        master_dict = {}
+        for k, v in field_values.items():
+            if isinstance(v, dict) and "value" in v:
+                master_dict[k] = RenderableValue(
+                    v["value"],
+                    v.get("confidence", 1.0),
+                    v.get("needs_review", False)
+                )
+            else:
+                master_dict[k] = RenderableValue(v, 1.0, False)
+
         output_path = STORAGE_ROOT / "reports" / output_name
-        return self.report_generator.generate_docx(template.original_docx_url, template.template_content_json, field_values, output_path)
+        return self.report_generator.generate_docx(template.original_docx_url, master_dict, output_path)

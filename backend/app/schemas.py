@@ -105,6 +105,7 @@ class TemplateCreate(BaseModel):
 
 
 class TemplateImportResponse(BaseModel):
+    id: int
     template_id: int
     template_key_id: str
     template_name: str
@@ -116,6 +117,7 @@ class TemplateImportResponse(BaseModel):
 
 
 class TemplateListItem(BaseModel):
+    id: int
     template_id: int
     template_key_id: str
     template_name: str
@@ -125,16 +127,26 @@ class TemplateListItem(BaseModel):
     updated_at: datetime | None = None
 
 
+class ScoredField(BaseModel):
+    value: str | None = None
+    source_page: int | None = None
+    ocr_confidence: float = 0.0
+    regex_confidence: float = 0.0
+    final_confidence: float = 0.0
+    validation_status: str | None = "valid"
+    validation_message: str | None = None
+
+
 class ExtractionResponse(BaseModel):
-    applicant_name: str | None = None
-    survey_number: str | None = None
-    plot_number: str | None = None
-    permission_number: str | None = None
-    property_address: str | None = None
-    built_up_area: str | None = None
-    land_area: str | None = None
-    document_number: str | None = None
-    registration_details: str | None = None
+    applicant_name: ScoredField | None = None
+    survey_number: ScoredField | None = None
+    plot_number: ScoredField | None = None
+    permission_number: ScoredField | None = None
+    property_address: ScoredField | None = None
+    built_up_area: ScoredField | None = None
+    land_area: ScoredField | None = None
+    document_number: ScoredField | None = None
+    registration_details: ScoredField | None = None
     confidence: float | None = None
 
 

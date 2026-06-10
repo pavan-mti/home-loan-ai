@@ -164,6 +164,20 @@ def _table_to_spec(table: Table) -> TemplateTableSpec:
     return TemplateTableSpec(name=None, headers=headers, rows=rows)
 
 
+def _is_metadata_or_nested_line(text: str) -> bool:
+    key, _ = _split_key_value(text)
+    if not key:
+        return False
+    normalized = key.lower()
+    if normalized in {
+        "source document", "document source", "source", "keywords",
+        "static value", "static", "dynamic value", "dynamic",
+        "field type", "type", "label", "field label", "field code", "code"
+    }:
+        return True
+    return False
+
+
 def parse_template_docx(file_path: Path) -> dict[str, Any]:
     document = Document(str(file_path))
     sections: list[dict[str, Any]] = []
@@ -199,22 +213,6 @@ def parse_template_docx(file_path: Path) -> dict[str, Any]:
             "nested_fields": base.get("nested_fields", []),
         }
 
-    def is_metadata_or_nested_line(text: str) -> bool:
-        key, _ = _split_key_value(text)
-        if not key:
-            return False
-        normalized = key.lower()
-        if normalized in {"source document", "document source", "source", "keywords", "static value", "static", "dynamic value", "dynamic", "field type", "type", "label", "field label", "field code", "code"}:
-            return True
-        return False
-
-    def append_nested_field(text: str) -> None:
-        nonlocal current_field
-        if current_field is None:
-            start_field(text)
-            return
-        current_field.setdefault("nested_fields", []).append(_build_field_from_text(text))
-
     for block in _iter_block_items(document):
         if isinstance(block, Paragraph):
             text = _clean_text(block.text)
@@ -227,7 +225,7 @@ def parse_template_docx(file_path: Path) -> dict[str, Any]:
                     sections.append(current_section)
                 current_section = {"name": _normalize_section_name(text), "fields": [], "tables": []}
                 current_field = None
-            elif is_metadata_or_nested_line(text):
+            elif _is_metadata_or_nested_line(text):
                 if current_field is None:
                     start_field(text)
                 else:
@@ -243,6 +241,104 @@ def parse_template_docx(file_path: Path) -> dict[str, Any]:
         else:
             flush_current_field()
             current_section["tables"].append(_table_to_spec(block).model_dump())
+
+    flush_current_field()
+    if current_section["fields"] or current_section["tables"] or current_section["name"] != "GENERAL":
+        sections.append(current_section)
+
+    if not sections:
+        sections = [current_section]
+
+    content = TemplateContentSpec(sections=sections)
+    return content.model_dump()
+
+
+def parse_template_pdf(file_path: Path) -> dict[str, Any]:
+    import pdfplumber
+
+    sections: list[dict[str, Any]] = []
+    current_section: dict[str, Any] = {"name": "GENERAL", "fields": [], "tables": []}
+    current_field: dict[str, Any] | None = None
+
+    def flush_current_field() -> None:
+        nonlocal current_field, current_section
+        if not current_field:
+            return
+        if current_field.get("nested_fields"):
+            current_field["field_type"] = "group"
+        elif current_field.get("static_value") and not current_field.get("keywords"):
+            current_field["field_type"] = "static"
+        elif current_field.get("document_source") or current_field.get("keywords"):
+            current_field["field_type"] = current_field.get("field_type") or "text"
+        current_section["fields"].append(current_field)
+        current_field = None
+
+    def start_field(text: str) -> None:
+        nonlocal current_field
+        base = _build_field_from_text(text)
+        current_field = {
+            "label": base.get("label"),
+            "field_code": base.get("field_code"),
+            "document_source": base.get("document_source"),
+            "keywords": base.get("keywords", []),
+            "field_type": base.get("field_type", "text"),
+            "static_value": base.get("static_value"),
+            "dynamic_value": base.get("dynamic_value"),
+            "raw_text": base.get("raw_text"),
+            "nested_fields": base.get("nested_fields", []),
+        }
+
+    with pdfplumber.open(file_path) as pdf:
+        for page in pdf.pages:
+            # 1. Extract and process tables
+            tables = page.extract_tables() or []
+            for table in tables:
+                cleaned_rows = []
+                for row in table:
+                    cleaned_row = []
+                    for cell in row:
+                        cleaned_row.append(_clean_text(cell) if cell else "")
+                    cleaned_rows.append(cleaned_row)
+                headers = cleaned_rows[0] if cleaned_rows else []
+                current_section["tables"].append({
+                    "name": None,
+                    "headers": headers,
+                    "rows": cleaned_rows
+                })
+
+            # 2. Extract and process text
+            text = page.extract_text()
+            if not text:
+                continue
+            for line in text.splitlines():
+                line = _clean_text(line)
+                if not line:
+                    flush_current_field()
+                    continue
+                
+                # Heading detection: uppercase and short
+                words = line.split()
+                is_heading = len(words) <= 8 and line.isupper()
+
+                if is_heading:
+                    flush_current_field()
+                    if current_section["fields"] or current_section["tables"] or current_section["name"] != "GENERAL":
+                        sections.append(current_section)
+                    current_section = {"name": _normalize_section_name(line), "fields": [], "tables": []}
+                    current_field = None
+                elif _is_metadata_or_nested_line(line):
+                    if current_field is None:
+                        start_field(line)
+                    else:
+                        _parse_metadata_line(current_field, line)
+                elif _split_key_value(line)[0] or line.endswith(":"):
+                    flush_current_field()
+                    start_field(line)
+                else:
+                    if current_field is None:
+                        start_field(line)
+                    else:
+                        current_field["raw_text"] = f"{current_field.get('raw_text', '')}\n{line}".strip()
 
     flush_current_field()
     if current_section["fields"] or current_section["tables"] or current_section["name"] != "GENERAL":

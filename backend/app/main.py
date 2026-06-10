@@ -7,6 +7,7 @@ from typing import Any
 from fastapi import Depends, FastAPI, File, Header, Form, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from .database import Base, engine, get_db
@@ -308,6 +309,22 @@ async def import_template_docx(
     )
 
 
+@app.post("/templates/import", response_model=TemplateImportResponse, status_code=status.HTTP_201_CREATED)
+async def import_template(
+    template_key_id: str = Form(...),
+    template_name: str = Form(...),
+    template_bank: str = Form(...),
+    file: UploadFile = File(...),
+    template_service: TemplateService = Depends(get_template_service),
+) -> dict[str, Any]:
+    return template_service.import_template(
+        template_key_id=template_key_id,
+        template_name=template_name,
+        template_bank=template_bank,
+        upload=file,
+    )
+
+
 @app.get("/templates", response_model=list[TemplateListItem])
 def list_templates(template_service: TemplateService = Depends(get_template_service)) -> list[dict[str, Any]]:
     return template_service.list_templates()
@@ -355,6 +372,59 @@ def generate_report(template_id: int, field_values: dict[str, Any], template_ser
     return {"report_url": f"/storage/reports/{output_path.name}", "file_path": str(output_path)}
 
 
+@app.post("/reports/generate/{template_id}")
+async def generate_report_endpoint(
+    template_id: int,
+    files: list[UploadFile] = File(...),
+    template_service: TemplateService = Depends(get_template_service),
+) -> FileResponse:
+    template = template_service.repository.get_template(template_id)
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    if not template.original_docx_url:
+        raise HTTPException(status_code=400, detail="Template document file not found")
+
+    saved_paths = []
+    for upload in files:
+        saved_paths.append(save_upload(upload, "documents"))
+
+    mapped_data = template_service.map_fields(template_id, saved_paths)
+    
+    field_values = {}
+    import re
+    
+    def walk_fields(fields_list):
+        for f in fields_list:
+            val = f.get("extracted_value")
+            conf = f.get("confidence", 0.0)
+            nr = f.get("needs_review", False)
+            if val is not None and val != "":
+                payload = {"value": val, "confidence": conf, "needs_review": nr}
+                if f.get("field_code"):
+                    field_values[f["field_code"]] = payload
+                if f.get("label"):
+                    field_values[f["label"]] = payload
+                    slug = re.sub(r"[^a-z0-9]+", "_", f["label"].lower()).strip("_")
+                    if slug:
+                        field_values[slug] = payload
+            nested = f.get("nested_fields")
+            if nested:
+                walk_fields(nested)
+                
+    for section in mapped_data.get("sections", []):
+        walk_fields(section.get("fields", []))
+
+    import uuid
+    output_name = f"report_{uuid.uuid4().hex}.docx"
+    generated_file = template_service.generate_report(template_id, field_values, output_name=output_name)
+
+    return FileResponse(
+        path=str(generated_file),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        filename="valuation_report.docx"
+    )
+
+
 @app.post("/documents/permission-number", response_model=PermissionUploadResponse)
 async def get_permission_number(
     upload: UploadFile = File(...),
@@ -363,8 +433,12 @@ async def get_permission_number(
 ) -> PermissionUploadResponse:
     saved_path = save_upload(upload, "documents")
     extracted_text = extract_text_from_upload(saved_path)
-    permission_number = extract_permission_number(extracted_text)
-    analysis = analyze_document(extracted_text)
+    analysis = analyze_document(saved_path)
+    
+    permission_field = analysis.get("permission_number")
+    permission_number = permission_field.get("value") if isinstance(permission_field, dict) else None
+    if not permission_number:
+        permission_number = extract_permission_number(extracted_text)
 
     document_record = PermissionDocument(
         file_name=upload.filename or saved_path.name,

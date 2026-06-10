@@ -81,6 +81,8 @@ function App() {
   const [editingValuerId, setEditingValuerId] = useState(null)
   const [editingHlcId, setEditingHlcId] = useState(null)
   const [editingTemplateId, setEditingTemplateId] = useState(null)
+  const [selectedTemplateId, setSelectedTemplateId] = useState(null)
+  const [reportFiles, setReportFiles] = useState([])
 
   const authenticated = Boolean(auth.user && auth.token)
 
@@ -192,13 +194,6 @@ function App() {
   const handleTemplateSave = async () => {
     setError('')
     try {
-      const formData = new FormData()
-      formData.append('template_key_id', templateForm.template_key_id)
-      formData.append('template_name', templateForm.template_name)
-      formData.append('template_bank', templateForm.template_bank)
-      formData.append('template_content_json', templateForm.template_content_json)
-      if (templateFile) formData.append('template_file', templateFile)
-
       if (editingTemplateId) {
         await apiRequest(`/templates/${editingTemplateId}`, {
           method: 'PUT',
@@ -209,7 +204,14 @@ function App() {
           },
         })
       } else {
-        await apiRequest('/templates', {
+        const formData = new FormData()
+        formData.append('template_key_id', templateForm.template_key_id)
+        formData.append('template_name', templateForm.template_name)
+        formData.append('template_bank', templateForm.template_bank)
+        if (!templateFile) throw new Error('Please select a template file (.docx or .pdf) to upload.')
+        formData.append('file', templateFile)
+
+        await apiRequest('/templates/import', {
           method: 'POST',
           token: auth.token,
           formData,
@@ -221,6 +223,49 @@ function App() {
       setEditingTemplateId(null)
       await refreshCollections()
       setStatus('Template saved.')
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const handleDownloadReport = async () => {
+    setError('')
+    setStatus('')
+    try {
+      if (!selectedTemplateId) throw new Error('Please select a template first.')
+      if (reportFiles.length === 0) throw new Error('Please upload at least one document (e.g. AOS.pdf, Permission.pdf).')
+
+      const formData = new FormData()
+      for (const file of reportFiles) {
+        formData.append('files', file)
+      }
+
+      setStatus('Generating report...')
+      const response = await fetch(`${API_BASE}/reports/generate/${selectedTemplateId}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${auth.token}`
+        },
+        body: formData
+      })
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}))
+        throw new Error(payload?.detail || payload?.message || 'Report generation failed.')
+      }
+
+      const blob = await response.blob()
+      const objectUrl = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = objectUrl
+      anchor.download = 'valuation_report.docx'
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      URL.revokeObjectURL(objectUrl)
+
+      setStatus('Valuation report downloaded successfully.')
+      setReportFiles([])
     } catch (err) {
       setError(err.message)
     }
@@ -577,9 +622,46 @@ function App() {
                 </div>
                 <div className="panel p-6">
                   <h4 className="font-display text-2xl font-bold">Templates and Preview</h4>
+                  
+                  {selectedTemplateId && (
+                    <div className="my-5 rounded-3xl border border-teal-500 bg-teal-50/25 p-5 shadow-sm">
+                      <div className="inline-flex rounded-full bg-teal-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-teal-700">
+                        Selected Template
+                      </div>
+                      <h5 className="mt-2 text-lg font-bold text-slate-800">
+                        {templates.find(t => t.template_id === selectedTemplateId)?.template_name || 'Selected template'}
+                      </h5>
+                      <p className="mt-1 text-sm text-slate-600">
+                        Upload valuation documents (e.g. AOS.pdf, Permission.pdf, WO.pdf, RERA.pdf) to generate report.
+                      </p>
+                      <div className="mt-4 space-y-4">
+                        <div>
+                          <input 
+                            className="field p-2 bg-white" 
+                            type="file" 
+                            multiple 
+                            accept=".pdf,.docx,.jpg,.jpeg,.png,.webp" 
+                            onChange={(event) => setReportFiles(Array.from(event.target.files || []))} 
+                          />
+                        </div>
+                        {reportFiles.length > 0 && (
+                          <div className="text-xs text-slate-600 bg-slate-100 p-3 rounded-2xl">
+                            <strong>Files to upload:</strong>
+                            <ul className="list-disc list-inside mt-1">
+                              {reportFiles.map((f, i) => <li key={i}>{f.name}</li>)}
+                            </ul>
+                          </div>
+                        )}
+                        <button className="btn-primary w-full" onClick={handleDownloadReport} type="button">
+                          Download Report
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="mt-5 space-y-4">
                     {templates.length === 0 ? <p className="text-sm text-slate-500">No templates saved yet.</p> : templates.map((record) => (
-                      <div key={record.template_id} className="rounded-3xl border border-slate-200 bg-white p-4">
+                      <div key={record.template_id} className={`rounded-3xl border p-4 transition ${selectedTemplateId === record.template_id ? 'border-teal-500 bg-teal-50/10 ring-2 ring-teal-500/20 shadow-md' : 'border-slate-200 bg-white'}`}>
                         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                           <div>
                             <div className="font-semibold text-ink">{record.template_name}</div>
@@ -587,7 +669,9 @@ function App() {
                             {record.template_preview_text && <p className="mt-3 max-h-28 overflow-hidden text-sm text-slate-600">{record.template_preview_text}</p>}
                           </div>
                           <div className="flex gap-2">
-                            <button className="btn-secondary px-4 py-2" onClick={() => openEditTemplate(record)} type="button">Edit</button>
+                            <button className={`btn-primary px-4 py-2 ${selectedTemplateId === record.template_id ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`} onClick={() => setSelectedTemplateId(record.template_id)} type="button">
+                              {selectedTemplateId === record.template_id ? 'Selected' : 'Select'}
+                            </button>
                             <button className="btn-secondary px-4 py-2" onClick={() => handleDelete('/templates', record.template_id)} type="button">Delete</button>
                           </div>
                         </div>

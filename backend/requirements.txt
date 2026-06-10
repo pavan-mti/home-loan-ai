@@ -7,5 +7,10 @@ openai
 PyPDF2
 python-docx
 Pillow
-pytesseract
+paddleocr
+paddlepaddle
+docxtpl
+google-generativeai
 python-dotenv
+pdfplumber
+pymupdf

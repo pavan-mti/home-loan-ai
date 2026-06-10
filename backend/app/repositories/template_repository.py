@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+# pyrefly: ignore [missing-import]
 from sqlalchemy.orm import Session
 
 from ..models import Template

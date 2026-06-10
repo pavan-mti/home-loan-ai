@@ -99,6 +99,7 @@ class Template(Base, TimestampMixin):
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "id": self.template_id,
             "template_id": self.template_id,
             "template_key_id": self.template_key_id,
             "template_name": self.template_name,
