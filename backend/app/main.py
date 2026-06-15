@@ -30,7 +30,7 @@ from .schemas import (
     ValuerUpdate,
 )
 from .security import create_token, hash_password, verify_password
-from .services.documents import STORAGE_ROOT, analyze_document, extract_permission_number, extract_text_from_upload, save_upload
+from .services.documents import STORAGE_ROOT, analyze_document, extract_permission_number, extract_text_from_upload, save_upload, flatten_results
 from .services.template_service import TemplateService
 
 app = FastAPI(title="Home Loan Valuation AI", version="0.1.0")
@@ -472,6 +472,18 @@ async def get_permission_number(
 @app.get("/documents/analysis", response_model=ExtractionResponse)
 def preview_document_analysis(text: str, current_user: Freelancer = Depends(get_current_user)) -> ExtractionResponse:
     return ExtractionResponse(**analyze_document(text))
+
+
+@app.get("/documents/{document_id}/download-json", response_model=dict[str, Any])
+def download_document_json(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: Freelancer = Depends(get_current_user),
+) -> dict[str, Any]:
+    doc = db.get(PermissionDocument, document_id)
+    if not doc or doc.created_by_user_id != current_user.user_id:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return flatten_results(doc.extracted_json)
 
 
 @app.get("/reports")

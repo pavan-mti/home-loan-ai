@@ -1,66 +1,69 @@
 from __future__ import annotations
-import re
 from typing import Any
 from .base import BaseExtractor
 
 class ScheduleExtractor(BaseExtractor):
     def extract(self, text: str, page_results: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
-        survey = self._look_for_label(text, [
-            "Survey Number", "Survey No.", "Survey No", "SurveyNo", "Sy No.", "Sy No", "SyNo", "SURVEY NO", "Survey No./Gramkhantam/Abadi"
-        ], "survey_number", page_results)
-        
-        # Fallback if survey is not found
-        if not survey.get("value"):
-            fallback_val = self._extract_survey_fallback(text)
-            if fallback_val:
-                page_num = self._find_source_page_for_line(fallback_val, page_results)
-                ocr_conf = self._get_ocr_confidence(fallback_val, page_num, page_results)
-                survey = {
-                    "value": fallback_val,
-                    "source_page": page_num + 1,
-                    "ocr_confidence": float(ocr_conf),
-                    "regex_confidence": 0.60,
-                    "final_confidence": float((0.7 * ocr_conf) + (0.3 * 0.60))
-                }
-
         return {
-            "survey_number": survey,
-            
+            # Section 9 - Location
+            "survey_number": self.extract_field_pipeline(text, "survey_number", page_results),
             "plot_number": self._look_for_label(text, [
                 "Plot Number", "Plot No.", "Plot No", "PlotNo.", "PlotNo"
             ], "plot_number", page_results),
-            
-            "built_up_area": self._look_for_label(text, [
-                "Built-up Area", "Built Up Area", "Builtup Area", "Built-upArea", "BuiltUpArea", "built-up area as per sanctioned plan"
-            ], "built_up_area", page_results, is_area_field=True),
-            
-            "land_area": self._look_for_label(text, [
-                "Land Area", "LandArea", "Extent of Land", "Plot Area", "PlotArea"
-            ], "land_area", page_results, is_area_field=True)
-        }
+            "door_number": self.extract_field_pipeline(text, "door_number", page_results),
+            "village": self.extract_field_pipeline(text, "village", page_results),
+            "mandal": self.extract_field_pipeline(text, "mandal", page_results),
+            "district": self.extract_field_pipeline(text, "district", page_results),
+            "ts_number": self.extract_field_pipeline(text, "ts_number", page_results),
+            "ward": self.extract_field_pipeline(text, "ward", page_results),
+            "taluka": self.extract_field_pipeline(text, "taluka", page_results),
+            "layout_approval_date": self.extract_field_pipeline(text, "layout_approval_date", page_results),
+            "layout_approval_validity": self.extract_field_pipeline(text, "layout_approval_validity", page_results),
+            "approved_plan_authority": self.extract_field_pipeline(text, "approved_plan_authority", page_results),
 
-    def _extract_survey_fallback(self, text: str) -> str | None:
-        net_plot_match = re.search(r"Net Plot Area[^\n]+?(\d+/[A-Z0-9/,-]+(?:\s*,\s*\d+/[A-Z0-9/,-]+)*)", text, flags=re.IGNORECASE)
-        if net_plot_match:
-            return re.sub(r"\s+", " ", net_plot_match.group(1)).strip()
-        
-        # Simple checker to reject standard dates inside the fallback
-        MONTH_ABBRS = {"jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"}
-        
-        matches = re.findall(r"\b\d{2,4}/[A-Z0-9/,-]+\b", text, flags=re.IGNORECASE)
-        if matches:
-            for m in matches:
-                # Reject if matches a date
-                m_clean = m.strip().lower()
-                if re.search(r"\b\d{1,2}[./-]\d{1,2}[./-]\d{2,4}\b", m_clean):
-                    continue
-                if re.search(r"\b\d{4}[./-]\d{1,2}[./-]\d{1,2}\b", m_clean):
-                    continue
-                is_abbr = False
-                for abbr in MONTH_ABBRS:
-                    if m_clean.startswith(abbr):
-                        is_abbr = True
-                        break
-                if not is_abbr:
-                    return re.sub(r"\s+", " ", m).strip()
-        return None
+            # Section 8 - Financial
+            "market_value": self._look_for_label(text, [
+                "Market Value", "MarketValue", "Fair Market Value", "Value of Property"
+            ], "market_value", page_results),
+            "guideline_value": self._look_for_label(text, [
+                "Guideline Value", "GuidelineValue", "Govt Value", "Government Value"
+            ], "guideline_value", page_results),
+            "mortgage_details": self.extract_field_pipeline(text, "mortgage_details", page_results),
+            "ftl_buffer_zone_details": self.extract_field_pipeline(text, "ftl_buffer_zone_details", page_results),
+
+            # Section 7 - Legal
+            "legal_disputes": self._look_for_label(text, [
+                "Legal Disputes", "Disputes", "Litigations", "Court Cases"
+            ], "legal_disputes", page_results),
+            "is_disputed": self._look_for_label(text, [
+                "Is Disputed", "Disputed Status"
+            ], "is_disputed", page_results),
+            "legal_opinion": self.extract_field_pipeline(text, "legal_opinion", page_results),
+
+            # Section 5 - Property Description
+            "built_up_area": self.extract_field_pipeline(text, "built_up_area", page_results),
+            "land_area": self.extract_field_pipeline(text, "land_area", page_results),
+            "built_up_area_sqft": self.extract_field_pipeline(text, "built_up_area_sqft", page_results),
+            "land_area_sqyd": self.extract_field_pipeline(text, "land_area_sqyd", page_results),
+            "property_description": self.extract_field_pipeline(text, "property_description", page_results),
+            "property_tenure": self.extract_field_pipeline(text, "property_tenure", page_results),
+
+            # Section 1 - General
+            "valuation_purpose": self.extract_field_pipeline(text, "valuation_purpose", page_results),
+            "inspection_date": self.extract_field_pipeline(text, "inspection_date", page_results),
+            "valuation_date": self.extract_field_pipeline(text, "valuation_date", page_results),
+
+            # Section 6 - Prohibited
+            "prohibited_property_details": self.extract_field_pipeline(text, "prohibited_property_details", page_results),
+
+            # Section 13 - Municipality
+            "municipality_type": self.extract_field_pipeline(text, "municipality_type", page_results),
+
+            # Section 14 - Govt Enactments
+            "under_govt_enactment": self.extract_field_pipeline(text, "under_govt_enactment", page_results),
+            "enactment_details": self.extract_field_pipeline(text, "enactment_details", page_results),
+
+            # Extras
+            "state": self.extract_field_pipeline(text, "state", page_results),
+            "pincode": self.extract_field_pipeline(text, "pincode", page_results)
+        }

@@ -10,13 +10,15 @@
   html {
     font-family: theme(fontFamily.body);
     background: #eef2f8;
+    scroll-behavior: smooth;
   }
 
   body {
     margin: 0;
     min-height: 100vh;
-    color: #0b1220;
-    background: linear-gradient(180deg, #f8f4ee 0%, #eef2f8 100%);
+    color: #0f172a;
+    background: radial-gradient(circle at 10% 20%, rgba(244, 237, 228, 0.4) 0%, rgba(238, 242, 248, 0.6) 90%);
+    background-attachment: fixed;
   }
 
   * {
@@ -27,38 +29,112 @@
     color: inherit;
     text-decoration: none;
   }
+
+  /* Elegant minimal scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(15, 124, 125, 0.15);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(15, 124, 125, 0.3);
+  }
 }
 
 @layer components {
+  /* Premium Glassmorphism Panels */
   .panel {
-    @apply rounded-3xl border border-white/70 bg-white/75 shadow-panel backdrop-blur-xl;
+    @apply rounded-3xl border border-white/80 bg-white/70 shadow-[0_15px_40px_-15px_rgba(15,23,42,0.08)] backdrop-blur-md transition-all duration-300;
+  }
+  
+  .panel-hover {
+    @apply hover:shadow-[0_20px_50px_-10px_rgba(15,23,42,0.12)] hover:border-teal/30 hover:translate-y-[-2px];
   }
 
+  /* Soft custom inputs */
   .field {
-    @apply w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-teal focus:ring-2 focus:ring-teal/15;
+    @apply w-full rounded-2xl border border-slate-200/80 bg-white/95 px-4 py-3.5 text-sm font-medium text-slate-800 outline-none transition-all duration-200 focus:border-teal focus:ring-4 focus:ring-teal/10 placeholder:text-slate-400;
   }
 
   .label {
-    @apply mb-2 block text-xs font-semibold uppercase tracking-[0.24em] text-slate-500;
+    @apply mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500/90;
   }
 
+  /* Sleek modern buttons */
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-slate-900;
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-slate-900/10 transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-xl hover:shadow-slate-900/15 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200/80 bg-white/90 px-6 py-3.5 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-300 hover:border-slate-300 hover:bg-slate-50 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0;
   }
 
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-rose-50 border border-rose-100 px-6 py-3.5 text-sm font-semibold text-rose-700 transition-all duration-300 hover:bg-rose-100 hover:text-rose-800 hover:-translate-y-0.5 active:translate-y-0;
+  }
+
+  .btn-accent {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-teal px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-teal/15 transition-all duration-300 hover:-translate-y-0.5 hover:bg-teal/90 hover:shadow-xl hover:shadow-teal/20 active:translate-y-0;
+  }
+
+  /* Tab designs */
   .tab {
-    @apply rounded-2xl px-4 py-2 text-sm font-semibold transition;
+    @apply rounded-xl px-5 py-2.5 text-sm font-bold transition-all duration-300 flex items-center gap-2;
   }
 
   .tab-active {
-    @apply bg-ink text-white shadow-lg shadow-ink/10;
+    @apply bg-slate-900 text-white shadow-md shadow-slate-900/15;
   }
 
   .tab-inactive {
-    @apply bg-white/80 text-slate-600 hover:bg-white;
+    @apply bg-slate-100/70 text-slate-600 hover:bg-slate-200/80 hover:text-slate-800;
   }
+
+  /* Sub-tab designs for OCR categories */
+  .subtab {
+    @apply px-4 py-3 text-sm font-semibold transition-all duration-200 border-b-2;
+  }
+
+  .subtab-active {
+    @apply border-teal text-teal font-bold bg-teal/5;
+  }
+
+  .subtab-inactive {
+    @apply border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300;
+  }
+}
+
+/* Animations */
+@keyframes slide-in-up {
+  0% {
+    transform: translateY(15px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
 }

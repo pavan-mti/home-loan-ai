@@ -19,6 +19,7 @@ class WorkOrderExtractor(BaseExtractor):
             regex_conf = 0.95
             final_conf = (0.7 * ocr_conf) + (0.3 * regex_conf)
             
+        wo_party_name = self.extract_field_pipeline(text, "wo_party_name", page_results)
         return {
             "permission_number": {
                 "value": permission_number,
@@ -26,7 +27,8 @@ class WorkOrderExtractor(BaseExtractor):
                 "ocr_confidence": float(ocr_conf),
                 "regex_confidence": float(regex_conf),
                 "final_confidence": float(final_conf)
-            }
+            },
+            "wo_party_name": wo_party_name
         }
 
     def _extract_permission_number(self, text: str) -> str | None:

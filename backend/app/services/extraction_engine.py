@@ -25,6 +25,14 @@ class ExtractionEngine:
         keywords = field.get("keywords") or []
         label = field.get("label", "")
 
+        # Handle static fields
+        if field.get("field_type") == "static" or field.get("static_value") is not None:
+            return {
+                "value": field.get("static_value"),
+                "confidence": 1.0,
+                "needs_review": False,
+            }
+
         # Select relevant source text
         text_to_search = classified_docs.get(doc_source) or full_text
 
@@ -53,7 +61,7 @@ class ExtractionEngine:
         if confidence < 0.7:
             text_chunk = self._get_relevant_chunks(text_to_search, keywords, label)
             if text_chunk:
-                ai_res = self.gemini_service.extract_field_with_gemini(
+                ai_res = self.gemini_service.extract_field_with_llm(
                     field_code=field_code,
                     label=label,
                     keywords=keywords,

@@ -222,8 +222,11 @@ class OCREngine:
         # 2. Run OCR in parallel using ProcessPoolExecutor if there are pages to OCR
         if pages_to_ocr:
             from concurrent.futures import ProcessPoolExecutor
-            # Limit workers to CPU count - 1, or max 4 to prevent resource exhaustion
-            max_workers = min(len(pages_to_ocr), os.cpu_count() or 1, 4)
+            # On Windows, ProcessPoolExecutor with PaddlePaddle/PaddleOCR is prone to deadlocks/hangs.
+            if os.name == 'nt':
+                max_workers = 1
+            else:
+                max_workers = min(len(pages_to_ocr), os.cpu_count() or 1, 4)
             if max_workers > 1:
                 with ProcessPoolExecutor(max_workers=max_workers, initializer=_init_ocr_worker) as executor:
                     # Submit all pages
@@ -262,7 +265,11 @@ class OCREngine:
                     
             if pages_to_ocr:
                 from concurrent.futures import ProcessPoolExecutor
-                max_workers = min(len(pages_to_ocr), os.cpu_count() or 1, 4)
+                # On Windows, ProcessPoolExecutor with PaddlePaddle/PaddleOCR is prone to deadlocks/hangs.
+                if os.name == 'nt':
+                    max_workers = 1
+                else:
+                    max_workers = min(len(pages_to_ocr), os.cpu_count() or 1, 4)
                 ocr_results = {}
                 if max_workers > 1:
                     with ProcessPoolExecutor(max_workers=max_workers, initializer=_init_ocr_worker) as executor:

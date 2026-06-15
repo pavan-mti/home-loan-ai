@@ -9,6 +9,11 @@ try:
 except ImportError:
     genai = None
 
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
+
 
 class GeminiService:
     def __init__(self) -> None:
@@ -17,7 +22,7 @@ class GeminiService:
         if api_key and genai is not None:
             genai.configure(api_key=api_key)
 
-    def extract_field_with_gemini(
+    def extract_field_with_llm(
         self,
         *,
         field_code: str,
@@ -26,13 +31,12 @@ class GeminiService:
         text_chunk: str,
     ) -> dict[str, Any]:
         """
-        Queries Gemini API to extract a specific field based on custom prompt structure
+        Queries Gemini or OpenAI to extract a specific field based on custom prompt structure
         and returns the extracted value with default AI confidence.
         """
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key or genai is None:
-            return {"value": None, "confidence": 0.0}
-
+        gemini_key = os.getenv("GEMINI_API_KEY")
+        openai_key = os.getenv("OPENAI_API_KEY")
+        
         keywords_str = "\n".join(keywords) if keywords else label
         prompt = f"""Extract {field_code} from the following text.
 Field Description / Label: {label}
@@ -48,27 +52,48 @@ Return ONLY a valid JSON object matching this schema, without any backticks, mar
 Document text:
 {text_chunk}
 """
-        try:
-            model = genai.GenerativeModel(self.model_name)
-            # Fetch content. Attempting JSON schema mode
-            response = model.generate_content(
-                prompt,
-                generation_config={"response_mime_type": "application/json"}
-            )
-            raw_response = response.text.strip()
-            data = json.loads(raw_response)
-            val = data.get(field_code)
-            if val and str(val).lower() != "null":
-                return {"value": str(val), "confidence": 0.85}
-        except Exception:
-            # Fallback text cleaner if JSON response includes markdown wrapper block
+
+        # 1. Try Gemini if key is present
+        if gemini_key and genai is not None:
             try:
-                text = response.text.strip()
-                if "```json" in text:
-                    text = text.split("```json")[1].split("```")[0].strip()
-                elif "```" in text:
-                    text = text.split("```")[1].split("```")[0].strip()
-                data = json.loads(text)
+                model = genai.GenerativeModel(self.model_name)
+                response = model.generate_content(
+                    prompt,
+                    generation_config={"response_mime_type": "application/json"}
+                )
+                raw_response = response.text.strip()
+                data = json.loads(raw_response)
+                val = data.get(field_code)
+                if val and str(val).lower() != "null":
+                    return {"value": str(val), "confidence": 0.85}
+            except Exception:
+                try:
+                    text = response.text.strip()
+                    if "```json" in text:
+                        text = text.split("```json")[1].split("```")[0].strip()
+                    elif "```" in text:
+                        text = text.split("```")[1].split("```")[0].strip()
+                    data = json.loads(text)
+                    val = data.get(field_code)
+                    if val and str(val).lower() != "null":
+                        return {"value": str(val), "confidence": 0.85}
+                except Exception:
+                    pass
+
+        # 2. Try OpenAI if key is present and Gemini failed or was skipped
+        if openai_key and OpenAI is not None:
+            try:
+                client = OpenAI(api_key=openai_key)
+                response = client.chat.completions.create(
+                    model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant that extracts data in JSON format."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    response_format={"type": "json_object"}
+                )
+                raw_response = response.choices[0].message.content.strip()
+                data = json.loads(raw_response)
                 val = data.get(field_code)
                 if val and str(val).lower() != "null":
                     return {"value": str(val), "confidence": 0.85}
@@ -85,8 +110,9 @@ Document text:
         """
         Runs selective LLM fallback for fields with confidence < 0.90
         """
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key or genai is None:
+        gemini_key = os.getenv("GEMINI_API_KEY")
+        openai_key = os.getenv("OPENAI_API_KEY")
+        if not gemini_key and not openai_key:
             return fields
 
         for field_code, data in fields.items():
@@ -97,7 +123,7 @@ Document text:
                 label = field_code.replace("_", " ").title()
                 text_chunk = full_text[:8000]
                 
-                ai_res = self.extract_field_with_gemini(
+                ai_res = self.extract_field_with_llm(
                     field_code=field_code,
                     label=label,
                     keywords=[],

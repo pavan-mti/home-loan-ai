@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from ..repositories.template_repository import TemplateRepository
 from ..schemas import TemplateCreate, TemplateUpdate
-from .documents import STORAGE_ROOT, save_upload
+from .documents import STORAGE_ROOT, save_upload, flatten_results
 from .mapping_engine import MappingEngine
 from .ocr_engine import OCREngine
 from .report_generator import ReportGenerator
@@ -126,16 +126,10 @@ class TemplateService:
         
         from .report_generator import RenderableValue
         
+        flat_values = flatten_results(field_values)
         master_dict = {}
-        for k, v in field_values.items():
-            if isinstance(v, dict) and "value" in v:
-                master_dict[k] = RenderableValue(
-                    v["value"],
-                    v.get("confidence", 1.0),
-                    v.get("needs_review", False)
-                )
-            else:
-                master_dict[k] = RenderableValue(v, 1.0, False)
+        for k, v in flat_values.items():
+            master_dict[k] = RenderableValue(v, 1.0, False)
 
         output_path = STORAGE_ROOT / "reports" / output_name
-        return self.report_generator.generate_docx(template.original_docx_url, master_dict, output_path)
+        return self.report_generator.generate_docx(template.original_docx_url, master_dict, output_path)

@@ -33,8 +33,8 @@ class MappingEngine:
         # 2. Classify the cleaned documents
         classified_docs = self.classifier.classify_bundle(cleaned_bundle)
 
-        # 3. Create full combined text for global fallback
-        full_text = "\n\n".join(classified_docs.values())
+        # 3. Create full combined text for global fallback from ALL documents in the bundle
+        full_text = "\n\n".join(data.get("text", "") for data in cleaned_bundle.values())
 
         # 4. Walk the template sections and extract fields
         sections = template_content_json.get("sections", [])

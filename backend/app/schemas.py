@@ -138,15 +138,21 @@ class ScoredField(BaseModel):
 
 
 class ExtractionResponse(BaseModel):
-    applicant_name: ScoredField | None = None
-    survey_number: ScoredField | None = None
-    plot_number: ScoredField | None = None
-    permission_number: ScoredField | None = None
+    inspection_date: ScoredField | None = None
+    valuation_date: ScoredField | None = None
+    owner_name: ScoredField | None = None
+    purchaser_details: ScoredField | None = None
+    property_description: ScoredField | None = None
+    prohibited_property_details: ScoredField | None = None
+    legal_opinion: ScoredField | None = None
+    mortgage_details: ScoredField | None = None
+    ftl_buffer_zone_details: ScoredField | None = None
+    plot_survey_number: ScoredField | None = None
+    door_house_number: ScoredField | None = None
+    ts_number_village: ScoredField | None = None
+    ward_taluka: ScoredField | None = None
+    mandal_district: ScoredField | None = None
     property_address: ScoredField | None = None
-    built_up_area: ScoredField | None = None
-    land_area: ScoredField | None = None
-    document_number: ScoredField | None = None
-    registration_details: ScoredField | None = None
     confidence: float | None = None
 
 
