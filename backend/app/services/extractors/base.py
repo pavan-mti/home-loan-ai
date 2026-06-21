@@ -434,6 +434,9 @@ class BaseExtractor:
         page_results: list[dict[str, Any]],
         is_area_field: bool = False
     ) -> dict[str, Any]:
+        req = getattr(self, "required_fields", None)
+        if req is not None and field_key not in req:
+            return create_scored_field(None)
         return extract_field_by_labels(text, labels, field_key, page_results, is_area_field)
 
     def _parse_numeric_area(self, val: str | None) -> float | None:
@@ -578,6 +581,9 @@ class BaseExtractor:
         page_results: list[dict[str, Any]],
         custom_labels: list[str] | None = None
     ) -> dict[str, Any]:
+        req = getattr(self, "required_fields", None)
+        if req is not None and field_key not in req:
+            return create_scored_field(None)
         labels = custom_labels or FIELD_LABELS.get(field_key, [field_key])
         labels = sorted(labels, key=len, reverse=True)
         

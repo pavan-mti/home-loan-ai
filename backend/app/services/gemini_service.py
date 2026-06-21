@@ -106,10 +106,12 @@ Document text:
         self,
         fields: dict[str, dict[str, Any]],
         full_text: str,
+        required_fields: list[str] | None = None,
     ) -> dict[str, dict[str, Any]]:
         """
         Runs selective LLM fallback for fields with confidence < 0.90
         """
+        print("Inside fallback_low_confidence_fields")
         gemini_key = os.getenv("GEMINI_API_KEY")
         openai_key = os.getenv("OPENAI_API_KEY")
         if not gemini_key and not openai_key:
@@ -119,7 +121,11 @@ Document text:
             if field_code == "confidence":
                 continue
             
+            if required_fields is not None and field_code not in required_fields:
+                continue
+
             if data.get("final_confidence", 0.0) < 0.90:
+                print(f"Gemini fallback called for: {field_code}")
                 label = field_code.replace("_", " ").title()
                 text_chunk = full_text[:8000]
                 

@@ -7,12 +7,12 @@ from typing import Any
 from fastapi import Depends, FastAPI, File, Header, Form, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import Session
 
 from .database import Base, engine, get_db
 from .dependencies import get_template_service
-from .models import AuditLog, Freelancer, Hlc, PermissionDocument, SessionToken, Valuer
+from .models import AuditLog, Freelancer, Hlc, PermissionDocument, SessionToken, Valuer, Template
 from .schemas import (
     ExtractionResponse,
     FreelancerCreate,
@@ -28,6 +28,8 @@ from .schemas import (
     TemplateUpdate,
     ValuerCreate,
     ValuerUpdate,
+
+    TemplateFieldsGetResponse,
 )
 from .security import create_token, hash_password, verify_password
 from .services.documents import STORAGE_ROOT, analyze_document, extract_permission_number, extract_text_from_upload, save_upload, flatten_results
@@ -298,15 +300,25 @@ async def import_template_docx(
     template_key_id: str = Form(...),
     template_name: str = Form(...),
     template_bank: str = Form(...),
+    header_template_id: int | None = Form(default=None),
     file: UploadFile = File(...),
     template_service: TemplateService = Depends(get_template_service),
-) -> dict[str, Any]:
-    return template_service.import_docx(
-        template_key_id=template_key_id,
-        template_name=template_name,
-        template_bank=template_bank,
-        upload=file,
-    )
+):
+    try:
+        return template_service.import_docx(
+            template_key_id=template_key_id,
+            template_name=template_name,
+            template_bank=template_bank,
+            upload=file,
+            header_template_id=header_template_id,
+        )
+    except ValueError as e:
+        if str(e) == "No template placeholders detected":
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={"error": "No template placeholders detected"}
+            )
+        raise e
 
 
 @app.post("/templates/import", response_model=TemplateImportResponse, status_code=status.HTTP_201_CREATED)
@@ -314,15 +326,25 @@ async def import_template(
     template_key_id: str = Form(...),
     template_name: str = Form(...),
     template_bank: str = Form(...),
+    header_template_id: int | None = Form(default=None),
     file: UploadFile = File(...),
     template_service: TemplateService = Depends(get_template_service),
-) -> dict[str, Any]:
-    return template_service.import_template(
-        template_key_id=template_key_id,
-        template_name=template_name,
-        template_bank=template_bank,
-        upload=file,
-    )
+):
+    try:
+        return template_service.import_template(
+            template_key_id=template_key_id,
+            template_name=template_name,
+            template_bank=template_bank,
+            upload=file,
+            header_template_id=header_template_id,
+        )
+    except ValueError as e:
+        if str(e) == "No template placeholders detected":
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={"error": "No template placeholders detected"}
+            )
+        raise e
 
 
 @app.get("/templates", response_model=list[TemplateListItem])
@@ -336,6 +358,23 @@ def get_template(template_id: int, template_service: TemplateService = Depends(g
     if template is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not found")
     return template
+
+
+@app.get("/templates/{template_id}/fields", response_model=TemplateFieldsGetResponse)
+def get_template_fields_endpoint(
+    template_id: int,
+    template_service: TemplateService = Depends(get_template_service)
+) -> dict[str, Any]:
+    template = template_service.get_template(template_id)
+    if template is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not found")
+    
+    fields = template_service.get_template_fields(template_id)
+    return {
+        "template_id": template_id,
+        "template_name": template["template_name"],
+        "fields": fields
+    }
 
 
 @app.put("/templates/{template_id}", response_model=TemplateImportResponse)
@@ -363,13 +402,23 @@ def map_template_fields(
     saved_paths = []
     for upload in uploads:
         saved_paths.append(save_upload(upload, "documents"))
-    return template_service.map_fields(template_id, saved_paths)
+    required_fields = template_service.get_template_required_fields(template_id)
+
+
+    result = template_service.map_fields(template_id, saved_paths)
+
+    return result
 
 
 @app.post("/templates/{template_id}/generate-report")
 def generate_report(template_id: int, field_values: dict[str, Any], template_service: TemplateService = Depends(get_template_service)) -> dict[str, Any]:
     output_path = template_service.generate_report(template_id, field_values)
-    return {"report_url": f"/storage/reports/{output_path.name}", "file_path": str(output_path)}
+    try:
+        relative_url = output_path.relative_to(STORAGE_ROOT).as_posix()
+        report_url = f"/storage/{relative_url}"
+    except ValueError:
+        report_url = f"/storage/generated_reports/{output_path.name}"
+    return {"report_url": report_url, "file_path": str(output_path)}
 
 
 @app.post("/reports/generate/{template_id}")
@@ -427,21 +476,41 @@ async def generate_report_endpoint(
 
 @app.post("/documents/permission-number", response_model=PermissionUploadResponse)
 async def get_permission_number(
-    upload: UploadFile = File(...),
+    file: UploadFile | None = File(default=None),
+    upload: UploadFile | None = File(default=None),
+    template_id: int | None = Form(default=None),
     db: Session = Depends(get_db),
     current_user: Freelancer = Depends(get_current_user),
+    template_service: TemplateService = Depends(get_template_service),
 ) -> PermissionUploadResponse:
-    saved_path = save_upload(upload, "documents")
+    actual_file = file or upload
+    if not actual_file or not actual_file.filename:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="File upload is required")
+
+    saved_path = save_upload(actual_file, "documents")
     extracted_text = extract_text_from_upload(saved_path)
-    analysis = analyze_document(saved_path)
     
-    permission_field = analysis.get("permission_number")
-    permission_number = permission_field.get("value") if isinstance(permission_field, dict) else None
+    required_fields = None
+    if template_id is not None:
+        required_fields = template_service.get_template_required_fields(template_id)
+        
+    analysis = analyze_document(saved_path, required_fields=required_fields)
+    
+    permission_number = None
+    if isinstance(analysis, dict):
+        permission_field = analysis.get("permission_number")
+        permission_number = permission_field.get("value") if isinstance(permission_field, dict) else None
+    elif isinstance(analysis, list):
+        for item in analysis:
+            if isinstance(item, dict) and item.get("canonical_name") == "permission_number":
+                permission_number = item.get("value")
+                break
+                
     if not permission_number:
         permission_number = extract_permission_number(extracted_text)
 
     document_record = PermissionDocument(
-        file_name=upload.filename or saved_path.name,
+        file_name=actual_file.filename or saved_path.name,
         file_path=str(saved_path),
         extracted_text=extracted_text,
         permission_number=permission_number,
@@ -484,6 +553,53 @@ def download_document_json(
     if not doc or doc.created_by_user_id != current_user.user_id:
         raise HTTPException(status_code=404, detail="Document not found")
     return flatten_results(doc.extracted_json)
+
+
+@app.get("/documents", response_model=list[dict[str, Any]])
+def list_documents(
+    db: Session = Depends(get_db),
+    current_user: Freelancer = Depends(get_current_user),
+) -> list[dict[str, Any]]:
+    docs = db.query(PermissionDocument).filter(PermissionDocument.created_by_user_id == current_user.user_id).order_by(PermissionDocument.created_date.desc()).all()
+    return [
+        {
+            "document_id": d.document_id,
+            "file_name": d.file_name,
+            "permission_number": d.permission_number,
+            "created_at": d.created_date.isoformat() if d.created_date else None,
+        }
+        for d in docs
+    ]
+
+
+@app.put("/documents/{document_id}/analysis")
+def update_document_analysis(
+    document_id: int,
+    payload: dict[str, Any],
+    db: Session = Depends(get_db),
+    current_user: Freelancer = Depends(get_current_user),
+) -> dict[str, Any]:
+    doc = db.get(PermissionDocument, document_id)
+    if not doc or doc.created_by_user_id != current_user.user_id:
+        raise HTTPException(status_code=404, detail="Document not found")
+        
+    current_json = dict(doc.extracted_json)
+    for k, v in payload.items():
+        if k in current_json:
+            if isinstance(current_json[k], dict):
+                current_json[k]["value"] = v
+            else:
+                current_json[k] = v
+        else:
+            current_json[k] = {"value": v}
+            
+    doc.extracted_json = current_json
+    if "permission_number" in payload:
+        doc.permission_number = payload["permission_number"]
+        
+    db.commit()
+    db.refresh(doc)
+    return {"message": "Document analysis updated successfully", "analysis": doc.extracted_json}
 
 
 @app.get("/reports")

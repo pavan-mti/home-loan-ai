@@ -185,7 +185,7 @@ function App() {
   const auth = useAuthState()
   const [mode, setMode] = useState('login')
   const [authForm, setAuthForm] = useState(emptyAuth)
-  const [activeSection, setActiveSection] = useState('dashboard')
+  const [activeSection, setActiveSection] = useState('templates')
   const [valuers, setValuers] = useState([])
   const [hlcRecords, setHlcRecords] = useState([])
   const [templates, setTemplates] = useState([])
@@ -301,7 +301,7 @@ function App() {
       })
       auth.login(payload.token, payload.user)
       setAuthForm(emptyAuth)
-      setActiveSection('dashboard')
+      setActiveSection('templates')
       showToast('Successfully logged in!', 'success')
     } catch (err) {
       showToast(err.message, 'error')
@@ -921,27 +921,12 @@ function App() {
           {/* Links Section */}
           <nav className="p-4 space-y-1.5">
             {[
-              ['dashboard', 'Overview', (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" />
-                </svg>
-              )],
-              ['valuers', 'Valuers Panel', (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              )],
-              ['hlc', 'HLC Directory', (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-              )],
-              ['templates', 'Report Templates', (
+              ['templates', 'Template Management', (
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               )],
-              ['permission', 'AOS & WO Extraction', (
+              ['permission', 'Document Workspace', (
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
@@ -1023,331 +1008,11 @@ function App() {
         {/* Workspace Body */}
         <main className="flex-1 p-6 space-y-6 max-w-6xl w-full mx-auto animate-slide-up">
           
-          {/* Dashboard Section */}
-          {activeSection === 'dashboard' && (
-            <div className="space-y-6">
-              {/* Stat Counters Grid */}
-              <div className="grid gap-6 sm:grid-cols-3">
-                {[
-                  ['Registered Valuers', valuers.length, '👨‍💼', 'valuers', 'bg-blue-50 text-blue-700 border-blue-100'],
-                  ['HLC Bank Partners', hlcRecords.length, '🏢', 'hlc', 'bg-indigo-50 text-indigo-700 border-indigo-100'],
-                  ['Report Templates', templates.length, '📁', 'templates', 'bg-teal-50 text-teal-700 border-teal-100'],
-                ].map(([title, val, icon, link, themeColor]) => (
-                  <div
-                    key={title}
-                    onClick={() => setActiveSection(link)}
-                    className="panel panel-hover p-6 cursor-pointer flex items-center justify-between"
-                  >
-                    <div>
-                      <h4 className="text-slate-500 text-xs font-bold uppercase tracking-wider">{title}</h4>
-                      <p className="mt-2 text-4xl font-extrabold text-slate-800">{val}</p>
-                    </div>
-                    <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-2xl border border-slate-100">
-                      {icon}
-                    </div>
-                  </div>
-                ))}
-              </div>
 
-              {/* Main Welcome/Quickstart Panel */}
-              <div className="panel p-8 md:p-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6 bg-gradient-to-tr from-slate-900 to-indigo-950 text-white relative overflow-hidden">
-                <div className="absolute right-0 top-0 w-80 h-80 rounded-full bg-teal/10 blur-[80px] pointer-events-none" />
-                <div className="relative z-10 max-w-2xl">
-                  <span className="text-xs font-bold uppercase tracking-widest text-teal">Valuation Automation Engine</span>
-                  <h3 className="mt-2 text-3xl font-extrabold font-display">Fast OCR Extraction Pipeline</h3>
-                  <p className="mt-3 text-slate-300 text-sm leading-relaxed">
-                    Upload scanned home loan papers, blueprints, agreement values, boundaries data, and legal disputes. The extraction model instantly detects fields and fills them out for standard banking templates.
-                  </p>
-                </div>
-                <button
-                  className="btn-accent shrink-0 relative z-10"
-                  onClick={() => setActiveSection('permission')}
-                  type="button"
-                >
-                  Start OCR Extraction
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 5l7 7-7 7M5 12h14" /></svg>
-                </button>
-              </div>
 
-              {/* Workflow Details */}
-              <div className="panel p-6">
-                <h4 className="text-slate-800 text-lg font-bold mb-4">Core Automation Capabilities</h4>
-                <div className="grid gap-6 md:grid-cols-3">
-                  {[
-                    ['Freelancer Portal', 'Sign up multiple field officers who gather document data directly and upload details remotely.', '👥'],
-                    ['Flexible Exporting', 'Extract the permission numbers and download verified data in standard Microsoft Word format.', '📝'],
-                    ['Compliance Ready', 'Integrate with local zoning or verification portals for Telangana and GHMC direct lookups.', '⚖️'],
-                  ].map(([title, desc, emoji]) => (
-                    <div key={title} className="flex gap-4 items-start">
-                      <div className="text-2xl mt-1 shrink-0">{emoji}</div>
-                      <div>
-                        <h5 className="font-bold text-slate-800 text-sm">{title}</h5>
-                        <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">{desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* Valuers Panel Section */}
-          {activeSection === 'valuers' && (
-            <div className="grid gap-6 xl:grid-cols-[400px_1fr]">
-              {/* Save Form */}
-              <div className="panel p-6 h-fit">
-                <h3 className="font-display text-2xl font-bold text-slate-900 mb-1">
-                  {editingValuerId ? 'Edit Valuer Profile' : 'Register Valuer'}
-                </h3>
-                <p className="text-xs text-slate-500 mb-6">
-                  Fill out the parameters to save in the central database.
-                </p>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="label">Valuer Name</label>
-                    <input
-                      className="field"
-                      placeholder="e.g. Anand Murthy"
-                      value={valuerForm.valuer_name}
-                      onChange={(event) => setValuerForm({ ...valuerForm, valuer_name: event.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="label">Contact Number</label>
-                    <input
-                      className="field"
-                      placeholder="e.g. +91 98765 43210"
-                      value={valuerForm.valuer_contact}
-                      onChange={(event) => setValuerForm({ ...valuerForm, valuer_contact: event.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="label">Header Image Path (Optional)</label>
-                    <input
-                      className="field"
-                      placeholder="e.g. /storage/uploads/logo.jpg"
-                      value={valuerForm.valuer_header_image_path}
-                      onChange={(event) => setValuerForm({ ...valuerForm, valuer_header_image_path: event.target.value })}
-                    />
-                  </div>
-                  
-                  <div className="flex gap-2 pt-2">
-                    <button
-                      className="btn-primary flex-1"
-                      onClick={handleValuerSave}
-                      disabled={valuerSaving}
-                      type="button"
-                    >
-                      {valuerSaving ? 'Saving...' : editingValuerId ? 'Update Profile' : 'Save Valuer'}
-                    </button>
-                    <button
-                      className="btn-secondary"
-                      onClick={() => { setValuerForm(emptyValuer); setEditingValuerId(null); }}
-                      type="button"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
 
-              {/* List Profiles */}
-              <div className="panel p-6">
-                <h3 className="font-display text-2xl font-bold text-slate-900 mb-4">Saved Valuers</h3>
-                {valuers.length === 0 ? (
-                  <div className="text-center py-12 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-                    <p className="text-sm text-slate-500 font-medium">No registered valuers found.</p>
-                  </div>
-                ) : (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {valuers.map((val) => {
-                      const initials = val.valuer_name
-                        ? val.valuer_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
-                        : 'V';
-                      return (
-                        <div key={val.valuer_id} className="border border-slate-100 bg-white p-5 rounded-2xl shadow-sm flex flex-col justify-between group hover:border-teal/30 hover:shadow-md transition duration-200">
-                          <div className="flex gap-4 items-start">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-teal flex items-center justify-center text-white font-extrabold text-sm shadow-inner shrink-0">
-                              {initials}
-                            </div>
-                            <div className="min-w-0">
-                              <h4 className="font-bold text-slate-800 text-sm truncate">{val.valuer_name}</h4>
-                              <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                                <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                                {val.valuer_contact}
-                              </p>
-                              {val.valuer_header_image_path && (
-                                <p className="text-[10px] font-mono text-slate-400 truncate mt-1.5" title={val.valuer_header_image_path}>
-                                  Header: {val.valuer_header_image_path}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex gap-2 mt-4 pt-3 border-t border-slate-50 justify-end">
-                            <button
-                              className="btn-secondary px-3 py-1.5 text-xs font-semibold"
-                              onClick={() => openEditValuer(val)}
-                              type="button"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                              Edit
-                            </button>
-                            <button
-                              className="btn-danger px-3 py-1.5 text-xs"
-                              onClick={() => handleDelete('/valuers', val.valuer_id)}
-                              type="button"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* HLC Register Section */}
-          {activeSection === 'hlc' && (
-            <div className="grid gap-6 xl:grid-cols-[400px_1fr]">
-              {/* Save Form */}
-              <div className="panel p-6 h-fit">
-                <h3 className="font-display text-2xl font-bold text-slate-900 mb-1">
-                  {editingHlcId ? 'Edit HLC Record' : 'Register HLC'}
-                </h3>
-                <p className="text-xs text-slate-500 mb-6">
-                  Link home loan verification offices to coordinate workflow details.
-                </p>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="label">HLC Name</label>
-                    <input
-                      className="field"
-                      placeholder="e.g. Hyderabad HLC Main Office"
-                      value={hlcForm.hlc_name}
-                      onChange={(event) => setHlcForm({ ...hlcForm, hlc_name: event.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="label">Contact Number</label>
-                    <input
-                      className="field"
-                      placeholder="e.g. +91 99887 76655"
-                      value={hlcForm.hlc_contact}
-                      onChange={(event) => setHlcForm({ ...hlcForm, hlc_contact: event.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="label">Area Coverage</label>
-                    <input
-                      className="field"
-                      placeholder="e.g. Secunderabad"
-                      value={hlcForm.hlc_area}
-                      onChange={(event) => setHlcForm({ ...hlcForm, hlc_area: event.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="label">Associated Bank</label>
-                    <input
-                      className="field"
-                      placeholder="e.g. SBI, HDFC"
-                      value={hlcForm.hlc_bank}
-                      onChange={(event) => setHlcForm({ ...hlcForm, hlc_bank: event.target.value })}
-                    />
-                  </div>
-                  
-                  <div className="flex gap-2 pt-2">
-                    <button
-                      className="btn-primary flex-1"
-                      onClick={handleHlcSave}
-                      disabled={hlcSaving}
-                      type="button"
-                    >
-                      {hlcSaving ? 'Saving...' : editingHlcId ? 'Update HLC' : 'Save HLC'}
-                    </button>
-                    <button
-                      className="btn-secondary"
-                      onClick={() => { setHlcForm(emptyHlc); setEditingHlcId(null); }}
-                      type="button"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* List */}
-              <div className="panel p-6">
-                <h3 className="font-display text-2xl font-bold text-slate-900 mb-4">HLC Partners Directory</h3>
-                {hlcRecords.length === 0 ? (
-                  <div className="text-center py-12 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-                    <p className="text-sm text-slate-500 font-medium">No registered HLC records found.</p>
-                  </div>
-                ) : (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {hlcRecords.map((rec) => {
-                      const initials = rec.hlc_name
-                        ? rec.hlc_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
-                        : 'H';
-                      return (
-                        <div key={rec.hlc_id} className="border border-slate-100 bg-white p-5 rounded-2xl shadow-sm flex flex-col justify-between hover:border-teal/30 hover:shadow-md transition duration-200">
-                          <div>
-                            <div className="flex gap-3.5 items-start">
-                              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white font-extrabold text-sm shrink-0">
-                                {initials}
-                              </div>
-                              <div className="min-w-0">
-                                <h4 className="font-bold text-slate-800 text-sm truncate">{rec.hlc_name}</h4>
-                                <div className="mt-2 space-y-1">
-                                  <p className="text-xs text-slate-500 flex items-center gap-1">
-                                    <span className="font-semibold text-slate-400 w-12 shrink-0">Bank:</span>
-                                    {rec.hlc_bank}
-                                  </p>
-                                  <p className="text-xs text-slate-500 flex items-center gap-1">
-                                    <span className="font-semibold text-slate-400 w-12 shrink-0">Area:</span>
-                                    {rec.hlc_area}
-                                  </p>
-                                  <p className="text-xs text-slate-500 flex items-center gap-1">
-                                    <span className="font-semibold text-slate-400 w-12 shrink-0">Contact:</span>
-                                    {rec.hlc_contact}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex gap-2 mt-5 pt-3 border-t border-slate-50 justify-end">
-                            <button
-                              className="btn-secondary px-3 py-1.5 text-xs font-semibold"
-                              onClick={() => openEditHlc(rec)}
-                              type="button"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                              Edit
-                            </button>
-                            <button
-                              className="btn-danger px-3 py-1.5 text-xs"
-                              onClick={() => handleDelete('/hlc', rec.hlc_id)}
-                              type="button"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Report Templates Section */}
           {activeSection === 'templates' && (

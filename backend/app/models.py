@@ -5,7 +5,7 @@ from typing import Any
 
 from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
 
@@ -85,6 +85,7 @@ class Hlc(Base, TimestampMixin):
         }
 
 
+
 class Template(Base, TimestampMixin):
     __tablename__ = "templates"
 
@@ -96,6 +97,8 @@ class Template(Base, TimestampMixin):
     original_docx_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    fields: Mapped[list[TemplateField]] = relationship("TemplateField", back_populates="template", cascade="all, delete-orphan", order_by="TemplateField.display_order")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -109,6 +112,17 @@ class Template(Base, TimestampMixin):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+
+class TemplateField(Base):
+    __tablename__ = "template_fields"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    template_id: Mapped[int] = mapped_column(ForeignKey("templates.template_id", ondelete="CASCADE"), nullable=False)
+    field_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    template: Mapped[Template] = relationship("Template", back_populates="fields")
 
 
 class PermissionDocument(Base, TimestampMixin):
@@ -132,4 +146,4 @@ class AuditLog(Base):
     entity: Mapped[str] = mapped_column(String(100), nullable=False)
     entity_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     details_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
-    created_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)

@@ -56,6 +56,7 @@ class HlcUpdate(BaseModel):
     hlc_bank: str | None = Field(default=None, max_length=255)
 
 
+
 class TemplateUpdate(BaseModel):
     template_key_id: str | None = Field(default=None, max_length=255)
     template_name: str | None = Field(default=None, max_length=255)
@@ -160,4 +161,21 @@ class PermissionUploadResponse(BaseModel):
     document_id: int
     permission_number: str | None = None
     extracted_text: str
-    analysis: dict[str, Any]
+    analysis: dict[str, Any] | list[dict[str, Any]]
+
+
+
+class TemplateFieldResponse(BaseModel):
+    id: int
+    field_name: str
+    display_order: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TemplateFieldsGetResponse(BaseModel):
+    template_id: int
+    template_name: str
+    fields: list[TemplateFieldResponse]
+
+    model_config = ConfigDict(from_attributes=True)
