@@ -1,5 +1,15 @@
 from __future__ import annotations
 
+import sys
+
+# Force unbuffered UTF-8 output so every print() and log line appears
+# immediately in the terminal regardless of how the process was launched.
+# This must run before any other import.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", line_buffering=False)
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", line_buffering=False)
+
 import json
 from datetime import datetime, timedelta
 from typing import Any
@@ -12,7 +22,7 @@ from sqlalchemy.orm import Session
 
 from .database import Base, engine, get_db
 from .dependencies import get_template_service
-from .models import AuditLog, Freelancer, Hlc, PermissionDocument, SessionToken, Valuer, Template
+from .models import AuditLog, Freelancer, Hlc, PermissionDocument, SessionToken, Valuer, HeaderTemplate, Template, CompletionCertificateTemplate
 from .schemas import (
     ExtractionResponse,
     FreelancerCreate,
@@ -26,9 +36,14 @@ from .schemas import (
     TemplateImportResponse,
     TemplateListItem,
     TemplateUpdate,
+    TemplateUploadResponse,
+    TemplateDetailResponse,
     ValuerCreate,
     ValuerUpdate,
-
+    HeaderTemplateResponse,
+    CompletionCertificateResponse,
+    CompletionCertificateUpdate,
+    MapSavedFieldsRequest,
     TemplateFieldsGetResponse,
 )
 from .security import create_token, hash_password, verify_password
@@ -52,6 +67,62 @@ app.mount("/storage", StaticFiles(directory=STORAGE_ROOT), name="storage")
 
 def _ensure_database() -> None:
     Base.metadata.create_all(bind=engine)
+    
+    try:
+        from sqlalchemy import inspect, text
+        inspector = inspect(engine)
+        columns = [col["name"] for col in inspector.get_columns("templates")]
+        if "header_template_id" not in columns:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE templates ADD COLUMN header_template_id INTEGER REFERENCES header_templates(id)"))
+
+        tf_columns = [col["name"] for col in inspector.get_columns("template_fields")]
+        if "created_at" not in tf_columns:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE template_fields ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL"))
+        if "field_type" not in tf_columns:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE template_fields ADD COLUMN field_type VARCHAR(50) DEFAULT 'dynamic' NOT NULL"))
+        if "static_value" not in tf_columns:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE template_fields ADD COLUMN static_value VARCHAR(1000)"))
+    except Exception as e:
+        print(f"Database migration error: {e}")
+
+    try:
+        from .models import CompletionCertificateTemplate
+        from .database import SessionLocal
+        with SessionLocal() as db:
+            cert = db.query(CompletionCertificateTemplate).first()
+            if not cert:
+                default_text = (
+                    "To\tDate:{Date}\n"
+                    "STATE BANK OF INDIA\n"
+                    "RACPC (HLC)\n"
+                    "HYDERABAD.\n\n"
+                    "                           COMPLETION CERTIFICATE\n\n"
+                    "This is 1. {Owner Name},\n"
+                    " S/O. {Father Name}\n"
+                    "2. {Co-owner Name},\n"
+                    " W/O. {Co-owner Husband Name}\n"
+                    "Mobile:{Mobile Number}\n\n"
+                    "Completed the {Property Description}, Constructed on Open Plot bearing No.{Plot No}, "
+                    "admeasuring an extent of {Area Sq Yds} Sq.Yds or {Area Sq Mtrs} Sq.Mtrs, in Survey No's.{Survey Nos}, "
+                    "having total built up area of {Built Up Area} Sq.Feet ({Built Up Area Details}), roof covered with R.C.C., "
+                    "as shown in the Plan annexed herewith, situated at {Village} Village Under the Municipal Limits of "
+                    "{Municipality} Municipality, {Mandal} Mandal, {District} District, Telangana State,Pin:{Pin Code}\n"
+                    "We have inspected the Premises on {Inspection Date} and observed that the Building works and interior works "
+                    "are completed and ready to occupy.\n\n"
+                    "Note: \n"
+                    "1) The subjected house is fully completed.\n"
+                    "2) As on date of inspection this property was ready for occupation.\n"
+                    "3) This certificate is issued for completion purpose only\n"
+                    "4) This certificate is issued irrespective of valuation & plan approved."
+                )
+                db.add(CompletionCertificateTemplate(id=1, template_text=default_text))
+                db.commit()
+    except Exception as e:
+        print(f"Error seeding completion certificate template: {e}")
 
 
 @app.on_event("startup")
@@ -314,9 +385,9 @@ async def import_template_docx(
         )
     except ValueError as e:
         if str(e) == "No template placeholders detected":
-            return JSONResponse(
+            raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                content={"error": "No template placeholders detected"}
+                detail="No template placeholders detected"
             )
         raise e
 
@@ -331,33 +402,87 @@ async def import_template(
     template_service: TemplateService = Depends(get_template_service),
 ):
     try:
-        return template_service.import_template(
+        print(f"[main.py] POST /templates/import - filename: {file.filename}, key: {template_key_id}, name: {template_name}")
+        res = template_service.import_template(
             template_key_id=template_key_id,
             template_name=template_name,
             template_bank=template_bank,
             upload=file,
             header_template_id=header_template_id,
         )
+        print(f"[main.py] POST /templates/import - SUCCESS")
+        return res
+    except ValueError as e:
+        print(f"[main.py] POST /templates/import - ValueError: {e}")
+        if str(e) == "No template placeholders detected":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No template placeholders detected"
+            )
+        raise e
+    except Exception as e:
+        print(f"[main.py] POST /templates/import - Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise e
+
+
+@app.post("/templates/upload", response_model=TemplateUploadResponse, status_code=status.HTTP_201_CREATED)
+async def upload_template(
+    template_name: str = Form(...),
+    file: UploadFile = File(...),
+    template_service: TemplateService = Depends(get_template_service),
+):
+    import re
+    template_key_id = re.sub(r"[^a-z0-9]+", "_", template_name.lower()).strip("_")
+    if not template_key_id:
+        template_key_id = "template"
+    try:
+        res = template_service.import_template(
+            template_key_id=template_key_id,
+            template_name=template_name,
+            template_bank="General",
+            upload=file,
+            header_template_id=None,
+        )
+        template_id = res["template_id"]
+        fields = template_service.get_template_fields(template_id, as_strings=True)
+        return TemplateUploadResponse(
+            template_id=template_id,
+            template_name=res["template_name"],
+            field_count=len(fields),
+            fields=fields
+        )
     except ValueError as e:
         if str(e) == "No template placeholders detected":
-            return JSONResponse(
+            raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                content={"error": "No template placeholders detected"}
+                detail="No template placeholders detected"
             )
         raise e
 
 
 @app.get("/templates", response_model=list[TemplateListItem])
 def list_templates(template_service: TemplateService = Depends(get_template_service)) -> list[dict[str, Any]]:
-    return template_service.list_templates()
+    templates = template_service.list_templates()
+    for t in templates:
+        t["field_count"] = template_service.get_template_field_count(t["template_id"])
+    return templates
 
 
-@app.get("/templates/{template_id}", response_model=TemplateImportResponse)
+@app.get("/templates/{template_id}", response_model=TemplateDetailResponse)
 def get_template(template_id: int, template_service: TemplateService = Depends(get_template_service)) -> dict[str, Any]:
     template = template_service.get_template(template_id)
     if template is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not found")
-    return template
+    
+    fields = template_service.get_template_fields(template_id)
+    return {
+        "id": template["id"],
+        "name": template["template_name"],
+        "field_count": len(fields),
+        "fields": fields
+    }
 
 
 @app.get("/templates/{template_id}/fields", response_model=TemplateFieldsGetResponse)
@@ -402,12 +527,7 @@ def map_template_fields(
     saved_paths = []
     for upload in uploads:
         saved_paths.append(save_upload(upload, "documents"))
-    required_fields = template_service.get_template_required_fields(template_id)
-
-
-    result = template_service.map_fields(template_id, saved_paths)
-
-    return result
+    return template_service.map_fields(template_id, saved_paths)
 
 
 @app.post("/templates/{template_id}/generate-report")
@@ -476,41 +596,21 @@ async def generate_report_endpoint(
 
 @app.post("/documents/permission-number", response_model=PermissionUploadResponse)
 async def get_permission_number(
-    file: UploadFile | None = File(default=None),
-    upload: UploadFile | None = File(default=None),
-    template_id: int | None = Form(default=None),
+    upload: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: Freelancer = Depends(get_current_user),
-    template_service: TemplateService = Depends(get_template_service),
 ) -> PermissionUploadResponse:
-    actual_file = file or upload
-    if not actual_file or not actual_file.filename:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="File upload is required")
-
-    saved_path = save_upload(actual_file, "documents")
+    saved_path = save_upload(upload, "documents")
     extracted_text = extract_text_from_upload(saved_path)
+    analysis = analyze_document(saved_path)
     
-    required_fields = None
-    if template_id is not None:
-        required_fields = template_service.get_template_required_fields(template_id)
-        
-    analysis = analyze_document(saved_path, required_fields=required_fields)
-    
-    permission_number = None
-    if isinstance(analysis, dict):
-        permission_field = analysis.get("permission_number")
-        permission_number = permission_field.get("value") if isinstance(permission_field, dict) else None
-    elif isinstance(analysis, list):
-        for item in analysis:
-            if isinstance(item, dict) and item.get("canonical_name") == "permission_number":
-                permission_number = item.get("value")
-                break
-                
+    permission_field = analysis.get("permission_number")
+    permission_number = permission_field.get("value") if isinstance(permission_field, dict) else None
     if not permission_number:
         permission_number = extract_permission_number(extracted_text)
 
     document_record = PermissionDocument(
-        file_name=actual_file.filename or saved_path.name,
+        file_name=upload.filename or saved_path.name,
         file_path=str(saved_path),
         extracted_text=extracted_text,
         permission_number=permission_number,
@@ -602,6 +702,169 @@ def update_document_analysis(
     return {"message": "Document analysis updated successfully", "analysis": doc.extracted_json}
 
 
+@app.post("/templates/{template_id}/map-saved-fields")
+def map_saved_fields_endpoint(
+    template_id: int,
+    payload: MapSavedFieldsRequest,
+    db: Session = Depends(get_db),
+    current_user: Freelancer = Depends(get_current_user),
+    template_service: TemplateService = Depends(get_template_service),
+) -> dict[str, Any]:
+    doc = db.get(PermissionDocument, payload.document_id)
+    if not doc or doc.created_by_user_id != current_user.user_id:
+        raise HTTPException(status_code=404, detail="Document not found")
+        
+    saved_values = flatten_results(doc.extracted_json)
+    return template_service.map_saved_fields(template_id, saved_values)
+
+
 @app.get("/reports")
 def list_reports() -> dict[str, list[Any]]:
     return {"reports": []}
+
+
+# Header Templates Endpoints
+@app.get("/header-templates", response_model=list[HeaderTemplateResponse])
+def list_header_templates(db: Session = Depends(get_db), current_user: Freelancer = Depends(get_current_user)) -> list[HeaderTemplate]:
+    return db.query(HeaderTemplate).all()
+
+
+@app.post("/header-templates", response_model=HeaderTemplateResponse, status_code=status.HTTP_201_CREATED)
+async def create_header_template(
+    header_name: str = Form(...),
+    is_active: bool = Form(default=True),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: Freelancer = Depends(get_current_user)
+) -> HeaderTemplate:
+    headers_dir = STORAGE_ROOT / "headers"
+    headers_dir.mkdir(parents=True, exist_ok=True)
+    
+    import uuid
+    from pathlib import Path
+    suffix = Path(file.filename or "header.png").suffix.lower()
+    if suffix not in {".png", ".jpg", ".jpeg"}:
+        raise HTTPException(status_code=400, detail="Only JPG, JPEG, and PNG files are allowed")
+        
+    filename = f"{uuid.uuid4().hex}{suffix}"
+    saved_path = headers_dir / filename
+    
+    with saved_path.open("wb") as buffer:
+        import shutil
+        shutil.copyfileobj(file.file, buffer)
+        
+    image_path = f"/storage/headers/{filename}"
+    
+    header = HeaderTemplate(
+        header_name=header_name,
+        image_path=image_path,
+        is_active=is_active
+    )
+    db.add(header)
+    db.commit()
+    db.refresh(header)
+    return header
+
+
+@app.put("/header-templates/{header_id}", response_model=HeaderTemplateResponse)
+async def update_header_template(
+    header_id: int,
+    header_name: str | None = Form(default=None),
+    is_active: bool | None = Form(default=None),
+    file: UploadFile | None = File(default=None),
+    db: Session = Depends(get_db),
+    current_user: Freelancer = Depends(get_current_user)
+) -> HeaderTemplate:
+    header = db.get(HeaderTemplate, header_id)
+    if not header:
+        raise HTTPException(status_code=404, detail="Header template not found")
+        
+    if header_name is not None:
+        header.header_name = header_name
+    if is_active is not None:
+        header.is_active = is_active
+        
+    if file is not None:
+        from pathlib import Path
+        suffix = Path(file.filename or "header.png").suffix.lower()
+        if suffix not in {".png", ".jpg", ".jpeg"}:
+            raise HTTPException(status_code=400, detail="Only JPG, JPEG, and PNG files are allowed")
+            
+        try:
+            old_path = STORAGE_ROOT / "headers" / Path(header.image_path).name
+            if old_path.exists() and old_path.is_file():
+                old_path.unlink()
+        except Exception:
+            pass
+            
+        headers_dir = STORAGE_ROOT / "headers"
+        headers_dir.mkdir(parents=True, exist_ok=True)
+        import uuid
+        filename = f"{uuid.uuid4().hex}{suffix}"
+        saved_path = headers_dir / filename
+        
+        with saved_path.open("wb") as buffer:
+            import shutil
+            shutil.copyfileobj(file.file, buffer)
+            
+        header.image_path = f"/storage/headers/{filename}"
+        
+    header.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(header)
+    return header
+
+
+@app.delete("/header-templates/{header_id}")
+def delete_header_template(
+    header_id: int,
+    db: Session = Depends(get_db),
+    current_user: Freelancer = Depends(get_current_user)
+) -> dict[str, str]:
+    header = db.get(HeaderTemplate, header_id)
+    if not header:
+        raise HTTPException(status_code=404, detail="Header template not found")
+        
+    try:
+        from pathlib import Path
+        img_file_path = STORAGE_ROOT / "headers" / Path(header.image_path).name
+        if img_file_path.exists() and img_file_path.is_file():
+            img_file_path.unlink()
+    except Exception:
+        pass
+        
+    db.query(Template).filter(Template.header_template_id == header_id).update({Template.header_template_id: None})
+    
+    db.delete(header)
+    db.commit()
+    return {"message": "Header template deleted"}
+
+
+@app.get("/completion-certificate", response_model=CompletionCertificateResponse)
+def get_completion_certificate(db: Session = Depends(get_db), current_user: Freelancer = Depends(get_current_user)) -> CompletionCertificateResponse:
+    cert = db.query(CompletionCertificateTemplate).first()
+    if not cert:
+        default_text = "To\tDate:{Date}\nSTATE BANK OF INDIA\nRACPC (HLC)\nHYDERABAD.\n\n                           COMPLETION CERTIFICATE\n\nThis is 1. {Owner Name},\n S/O. {Father Name}\n2. {Co-owner Name},\n W/O. {Co-owner Husband Name}\nMobile:{Mobile Number}\n\nCompleted the {Property Description}, Constructed on Open Plot bearing No.{Plot No}, admeasuring an extent of {Area Sq Yds} Sq.Yds or {Area Sq Mtrs} Sq.Mtrs, in Survey No's.{Survey Nos}, having total built up area of {Built Up Area} Sq.Feet ({Built Up Area Details}), roof covered with R.C.C., as shown in the Plan annexed herewith, situated at {Village} Village Under the Municipal Limits of {Municipality} Municipality, {Mandal} Mandal, {District} District, Telangana State,Pin:{Pin Code}\nWe have inspected the Premises on {Inspection Date} and observed that the Building works and interior works are completed and ready to occupy.\n\nNote: \n1) The subjected house is fully completed.\n2) As on date of inspection this property was ready for occupation.\n3) This certificate is issued for completion purpose only\n4) This certificate is issued irrespective of valuation & plan approved."
+        cert = CompletionCertificateTemplate(id=1, template_text=default_text)
+        db.add(cert)
+        db.commit()
+        db.refresh(cert)
+    return cert
+
+
+@app.put("/completion-certificate", response_model=CompletionCertificateResponse)
+def update_completion_certificate(
+    payload: CompletionCertificateUpdate,
+    db: Session = Depends(get_db),
+    current_user: Freelancer = Depends(get_current_user)
+) -> CompletionCertificateResponse:
+    cert = db.query(CompletionCertificateTemplate).first()
+    if not cert:
+        cert = CompletionCertificateTemplate(id=1, template_text=payload.template_text)
+        db.add(cert)
+    else:
+        cert.template_text = payload.template_text
+        cert.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(cert)
+    return cert

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 os.environ['FLAGS_use_mkldnn'] = '0'
 os.environ['FLAGS_use_onednn'] = '0'
@@ -25,6 +27,22 @@ except ImportError:
 
 from .documents import save_upload
 
+def _resize_image_if_needed(image: Image.Image, max_side_limit: int = 4000) -> Image.Image:
+    width, height = image.size
+    if max(width, height) > max_side_limit:
+        print(f"Resized image size ({width}x{height}) exceeds max_side_limit of {max_side_limit}. Resizing to fit within limit.")
+        if width > height:
+            new_width = max_side_limit
+            new_height = int(height * max_side_limit / width)
+        else:
+            new_height = max_side_limit
+            new_width = int(width * max_side_limit / height)
+        try:
+            resample_filter = Image.Resampling.LANCZOS
+        except AttributeError:
+            resample_filter = Image.LANCZOS
+        image = image.resize((new_width, new_height), resample_filter)
+    return image
 
 _worker_ocr = None
 
@@ -146,6 +164,7 @@ def _ocr_page_task(pdf_path: str, page_num: int) -> dict[str, Any]:
     zoom = 350 / 72
     pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), alpha=False)
     image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+    image = _resize_image_if_needed(image, 4000)
     img_np = np.array(image)
     
     # 3. Apply Preprocessing
@@ -169,8 +188,8 @@ def _ocr_page_task(pdf_path: str, page_num: int) -> dict[str, Any]:
     return {
         "page_number": page_num,
         "lines": lines,
-        "width": pix.width,
-        "height": pix.height,
+        "width": image.width,
+        "height": image.height,
         "confidence": float(avg_conf)
     }
 
@@ -206,8 +225,10 @@ class OCREngine:
     def extract_text_from_pdf(self, pdf_path: Path) -> dict[str, str]:
         results: dict[str, str] = {}
         pdf_path = Path(pdf_path)
+        print(f"\n[OCREngine] Starting text extraction for document: {pdf_path.name}")
 
         doc = fitz.open(str(pdf_path))
+        print(f"[OCREngine] Document has {len(doc)} pages.")
         
         # 1. Identify scanned pages that need OCR
         pages_to_ocr = []
@@ -216,17 +237,21 @@ class OCREngine:
             text = page.get_text("text").strip()
             if text:
                 results[f"page_{page_num}"] = text
+                print(f"[OCREngine] Page {page_num}: Native text detected, skipping OCR.")
             else:
                 pages_to_ocr.append(page_num)
 
         # 2. Run OCR in parallel using ProcessPoolExecutor if there are pages to OCR
         if pages_to_ocr:
+            print(f"[OCREngine] Found {len(pages_to_ocr)} pages that require OCR: {pages_to_ocr}")
             from concurrent.futures import ProcessPoolExecutor
             # On Windows, ProcessPoolExecutor with PaddlePaddle/PaddleOCR is prone to deadlocks/hangs.
             if os.name == 'nt':
                 max_workers = 1
             else:
                 max_workers = min(len(pages_to_ocr), os.cpu_count() or 1, 4)
+            
+            print(f"[OCREngine] Running OCR with {max_workers} worker(s)...")
             if max_workers > 1:
                 with ProcessPoolExecutor(max_workers=max_workers, initializer=_init_ocr_worker) as executor:
                     # Submit all pages
@@ -237,31 +262,40 @@ class OCREngine:
                     # Gather results
                     for page_num, future in futures.items():
                         try:
+                            print(f"[OCREngine] Processing page {page_num}...")
                             page_res = future.result()
                             page_text = "\n".join([l["text"] for l in page_res["lines"]])
                             results[f"page_{page_num}"] = page_text
+                            print(f"[OCREngine] Finished page {page_num} successfully.")
                         except Exception as e:
                             results[f"page_{page_num}"] = f"[OCR Error on page {page_num}: {e}]"
+                            print(f"[OCREngine] Error on page {page_num}: {e}")
             else:
                 # Sequential fallback if only 1 page to OCR or single core CPU
-                for page_num in pages_to_ocr:
+                for idx, page_num in enumerate(pages_to_ocr, start=1):
                     try:
+                        print(f"[OCREngine] Running OCR on page {page_num} ({idx}/{len(pages_to_ocr)})...")
                         page_res = _ocr_page_task(str(pdf_path), page_num)
                         page_text = "\n".join([l["text"] for l in page_res["lines"]])
                         results[f"page_{page_num}"] = page_text
+                        print(f"[OCREngine] Finished page {page_num} successfully ({idx}/{len(pages_to_ocr)}).")
                     except Exception as e:
                         results[f"page_{page_num}"] = f"[OCR Error on page {page_num}: {e}]"
+                        print(f"[OCREngine] Error on page {page_num}: {e}")
 
+        print(f"[OCREngine] Completed text extraction for {pdf_path.name}\n")
         return results
 
     def extract_page_results(self, file_path: Path) -> list[dict[str, Any]]:
         file_path = Path(file_path)
         suffix = file_path.suffix.lower()
+        print(f"\n[OCREngine] Starting page results extraction for: {file_path.name}")
         
         if suffix == ".pdf":
             doc = fitz.open(str(file_path))
             pages_to_ocr = list(range(1, len(doc) + 1))
             results = []
+            print(f"[OCREngine] Document has {len(doc)} pages.")
                     
             if pages_to_ocr:
                 from concurrent.futures import ProcessPoolExecutor
@@ -271,6 +305,7 @@ class OCREngine:
                 else:
                     max_workers = min(len(pages_to_ocr), os.cpu_count() or 1, 4)
                 ocr_results = {}
+                print(f"[OCREngine] Running OCR with {max_workers} worker(s)...")
                 if max_workers > 1:
                     with ProcessPoolExecutor(max_workers=max_workers, initializer=_init_ocr_worker) as executor:
                         futures = {
@@ -278,35 +313,41 @@ class OCREngine:
                             for page_num in pages_to_ocr
                         }
                         for page_num, future in futures.items():
+                            print(f"[OCREngine] Processing page {page_num}...")
                             ocr_results[page_num] = future.result()
+                            print(f"[OCREngine] Finished page {page_num} successfully.")
                 else:
-                    for page_num in pages_to_ocr:
+                    for idx, page_num in enumerate(pages_to_ocr, start=1):
+                        print(f"[OCREngine] Running OCR on page {page_num} ({idx}/{len(pages_to_ocr)})...")
                         ocr_results[page_num] = _ocr_page_task(str(file_path), page_num)
+                        print(f"[OCREngine] Finished page {page_num} successfully ({idx}/{len(pages_to_ocr)}).")
                         
                 for page_num in pages_to_ocr:
                     results.append(ocr_results[page_num])
                     
             # Sort by page number
             results.sort(key=lambda x: x["page_number"])
+            print(f"[OCREngine] Completed page results extraction for {file_path.name}\n")
             return results
             
         elif suffix in {".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff", ".bmp"}:
-            ocr_result = self.ocr_client.ocr(str(file_path))
+            print(f"[OCREngine] Running image OCR...")
+            img_pil = Image.open(file_path)
+            img_pil = _resize_image_if_needed(img_pil, 4000)
+            img_np = np.array(img_pil.convert("RGB"))
+            
+            ocr_result = self.ocr_client.ocr(img_np)
             lines = _parse_ocr_result(ocr_result)
-            # Read image for re-OCR crop processing
-            img = cv2.imread(str(file_path))
-            if img is not None:
-                lines = _re_ocr_low_confidence_lines(img, lines, self.ocr_client)
+            lines = _re_ocr_low_confidence_lines(img_np, lines, self.ocr_client)
             avg_conf = np.mean([l["confidence"] for l in lines]) if lines else 0.0
             
-            img_pil = Image.open(file_path)
-            width, height = img_pil.size
+            print(f"[OCREngine] Completed image OCR with average confidence {avg_conf:.2f}\n")
             
             return [{
                 "page_number": 1,
                 "lines": lines,
-                "width": width,
-                "height": height,
+                "width": img_pil.width,
+                "height": img_pil.height,
                 "confidence": float(avg_conf)
             }]
             
@@ -342,7 +383,11 @@ class OCREngine:
             return "\n\n".join(page_map.values())
         elif suffix in {".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff", ".bmp"}:
             # For pure images, run PaddleOCR directly
-            ocr_result = self.ocr_client.ocr(str(file_path))
+            print(f"\n[OCREngine] Starting image OCR for: {file_path.name}")
+            img_pil = Image.open(file_path)
+            img_pil = _resize_image_if_needed(img_pil, 4000)
+            img_np = np.array(img_pil.convert("RGB"))
+            ocr_result = self.ocr_client.ocr(img_np)
             ocr_lines = []
             if ocr_result and ocr_result[0]:
                 if isinstance(ocr_result[0], dict):
@@ -353,13 +398,19 @@ class OCREngine:
                     for line in ocr_result[0]:
                         if line and len(line) > 1 and line[1]:
                             ocr_lines.append(str(line[1][0]))
+            total_chars = sum(len(l) for l in ocr_lines)
+            print(f"[OCREngine] Image OCR complete: {len(ocr_lines)} lines, {total_chars} chars extracted from {file_path.name}\n")
             return "\n".join(ocr_lines)
         elif suffix == ".docx":
             # Direct word zip extraction
+            print(f"[OCREngine] Reading DOCX text from: {file_path.name}")
             from .documents import _read_docx_bytes
-            return _read_docx_bytes(file_path.read_bytes())
+            text = _read_docx_bytes(file_path.read_bytes())
+            print(f"[OCREngine] DOCX text read complete: {len(text)} chars from {file_path.name}")
+            return text
         
         # Fallback text read
+        print(f"[OCREngine] Fallback plain text read for: {file_path.name}")
         return file_path.read_text("utf-8", errors="ignore")
 
     def extract_from_upload(self, upload: UploadFile, subfolder: str = "documents") -> tuple[Path, str]:

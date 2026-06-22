@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType } from 'docx'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
 
 const emptyAuth = { username: '', password: '', confirmPassword: '' }
 const emptyValuer = { valuer_name: '', valuer_contact: '', valuer_header_image_path: '' }
@@ -146,7 +146,8 @@ async function apiRequest(path, { method = 'GET', token, body, formData } = {}) 
   const contentType = response.headers.get('content-type') || ''
   const payload = contentType.includes('application/json') ? await response.json() : await response.text()
   if (!response.ok) {
-    throw new Error(payload?.detail || payload?.message || 'Request failed')
+    const errMsg = payload?.detail || payload?.message || payload?.error || (typeof payload === 'string' ? payload : '') || 'Request failed'
+    throw new Error(errMsg)
   }
   return payload
 }
@@ -185,7 +186,7 @@ function App() {
   const auth = useAuthState()
   const [mode, setMode] = useState('login')
   const [authForm, setAuthForm] = useState(emptyAuth)
-  const [activeSection, setActiveSection] = useState('templates')
+  const [activeSection, setActiveSection] = useState('overview')
   const [valuers, setValuers] = useState([])
   const [hlcRecords, setHlcRecords] = useState([])
   const [templates, setTemplates] = useState([])
@@ -200,6 +201,11 @@ function App() {
   const [permissionDragOver, setPermissionDragOver] = useState(false)
   const [templateDragOver, setTemplateDragOver] = useState(false)
   const [reportDragOver, setReportDragOver] = useState(false)
+
+  // Milestone 1 template management states
+  const [uploadedTemplateResult, setUploadedTemplateResult] = useState(null)
+  const [expandedTemplateId, setExpandedTemplateId] = useState(null)
+  const [templateFieldsCache, setTemplateFieldsCache] = useState({})
   
   // OCR & Loading states
   const [permissionResult, setPermissionResult] = useState(null)
@@ -225,6 +231,7 @@ function App() {
   const [editingMappedFields, setEditingMappedFields] = useState({})
   const [mappingReviewLoading, setMappingReviewLoading] = useState(false)
   const [activeReviewSectionTab, setActiveReviewSectionTab] = useState('')
+  const [workspaceStep, setWorkspaceStep] = useState(1)
 
   // Floating Toast Notifications System
   const [toasts, setToasts] = useState([])
@@ -301,7 +308,7 @@ function App() {
       })
       auth.login(payload.token, payload.user)
       setAuthForm(emptyAuth)
-      setActiveSection('templates')
+      setActiveSection('overview')
       showToast('Successfully logged in!', 'success')
     } catch (err) {
       showToast(err.message, 'error')
@@ -373,19 +380,24 @@ function App() {
   }
 
   const handleTemplateSave = async () => {
-    if (!templateForm.template_key_id || !templateForm.template_name || !templateForm.template_bank) {
-      showToast('Please fill out all required template metadata.', 'warning')
+    if (!templateForm.template_name) {
+      showToast('Please provide a template name.', 'warning')
       return
     }
+    const generatedKey = templateForm.template_key_id || templateForm.template_name.toLowerCase().replace(/[^a-z0-9]+/g, '_')
+    const generatedBank = templateForm.template_bank || 'General'
+
     setTemplateSaving(true)
     try {
-      let parsedJson
-      try {
-        parsedJson = JSON.parse(templateForm.template_content_json)
-      } catch {
-        showToast('Template Content JSON is not valid JSON.', 'error')
-        setTemplateSaving(false)
-        return
+      let parsedJson = { applicant_name: "", survey_number: "" }
+      if (templateForm.template_content_json) {
+        try {
+          parsedJson = JSON.parse(templateForm.template_content_json)
+        } catch {
+          showToast('Template Content JSON is not valid JSON.', 'error')
+          setTemplateSaving(false)
+          return
+        }
       }
 
       if (editingTemplateId) {
@@ -394,15 +406,15 @@ function App() {
           token: auth.token,
           body: {
             ...templateForm,
+            template_key_id: generatedKey,
+            template_bank: generatedBank,
             template_content_json: parsedJson,
           },
         })
         showToast('Template metadata updated.', 'success')
       } else {
         const formData = new FormData()
-        formData.append('template_key_id', templateForm.template_key_id)
         formData.append('template_name', templateForm.template_name)
-        formData.append('template_bank', templateForm.template_bank)
         if (!templateFile) {
           showToast('Please drag or upload a template file (.docx/.pdf).', 'warning')
           setTemplateSaving(false)
@@ -410,11 +422,12 @@ function App() {
         }
         formData.append('file', templateFile)
 
-        await apiRequest('/templates/import', {
+        const result = await apiRequest('/templates/upload', {
           method: 'POST',
           token: auth.token,
           formData,
         })
+        setUploadedTemplateResult(result)
         showToast('New report template imported successfully.', 'success')
       }
 
@@ -509,6 +522,7 @@ function App() {
         setActiveReviewSectionTab(result.sections[0].name)
       }
       showToast('Extraction and mapping complete! Please review.', 'success')
+      setWorkspaceStep(3)
     } catch (err) {
       showToast(err.message, 'error')
     } finally {
@@ -595,6 +609,58 @@ function App() {
     } finally {
       setReportLoading(false)
     }
+  }
+
+  const handleSaveChanges = () => {
+    if (!mappedData) return
+    const updatedSections = mappedData.sections.map(section => {
+      return {
+        ...section,
+        fields: (section.fields || []).map(f => {
+          const isGroup = f.field_type === 'group' || (f.nested_fields && f.nested_fields.length > 0)
+          if (isGroup) {
+            return {
+              ...f,
+              nested_fields: (f.nested_fields || []).map(nested => {
+                const val = editingMappedFields[nested.field_code]
+                if (val !== undefined) {
+                  return { ...nested, extracted_value: val }
+                }
+                return nested
+              })
+            }
+          }
+          const val = editingMappedFields[f.field_code]
+          if (val !== undefined) {
+            return { ...f, extracted_value: val }
+          }
+          return f
+        })
+      }
+    })
+    setMappedData({ ...mappedData, sections: updatedSections })
+    showToast('Changes saved successfully!', 'success')
+  }
+
+  const handleCopyResults = () => {
+    if (!mappedData) return
+    const result = {}
+    const walkAndCollect = (fieldsList) => {
+      for (const f of fieldsList) {
+        const isGroup = f.field_type === 'group' || (f.nested_fields && f.nested_fields.length > 0)
+        if (isGroup) {
+          walkAndCollect(f.nested_fields)
+          continue
+        }
+        const val = editingMappedFields[f.field_code] !== undefined ? editingMappedFields[f.field_code] : (f.extracted_value || '')
+        result[f.field_code] = val
+      }
+    }
+    for (const section of mappedData.sections) {
+      walkAndCollect(section.fields || [])
+    }
+    navigator.clipboard.writeText(JSON.stringify(result, null, 2))
+    showToast('Results copied to clipboard as JSON.', 'success')
   }
 
   const handlePermissionSubmit = async () => {
@@ -760,6 +826,30 @@ function App() {
     showToast('Editing Template metadata.', 'info')
   }
 
+  const toggleTemplateExpand = async (templateId) => {
+    if (expandedTemplateId === templateId) {
+      setExpandedTemplateId(null)
+      return
+    }
+
+    if (templateFieldsCache[templateId]) {
+      setExpandedTemplateId(templateId)
+      return
+    }
+
+    try {
+      const response = await apiRequest(`/templates/${templateId}/fields`, { token: auth.token })
+      const fieldNames = response.fields.map(f => f.field_name)
+      setTemplateFieldsCache(prev => ({
+        ...prev,
+        [templateId]: fieldNames
+      }))
+      setExpandedTemplateId(templateId)
+    } catch (err) {
+      showToast(err.message, 'error')
+    }
+  }
+
   // Drag and drop helper handlers
   const handleDrag = (e, setDragOver) => {
     e.preventDefault()
@@ -900,8 +990,8 @@ function App() {
           {/* Logo Section */}
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-teal to-indigo-600 flex items-center justify-center text-white shadow-md shadow-teal/10">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-600/10 shrink-0">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                 </svg>
               </div>
@@ -921,7 +1011,12 @@ function App() {
           {/* Links Section */}
           <nav className="p-4 space-y-1.5">
             {[
-              ['templates', 'Template Management', (
+              ['overview', 'Overview', (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" />
+                </svg>
+              )],
+              ['templates', 'Report Templates', (
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
@@ -1008,437 +1103,306 @@ function App() {
         {/* Workspace Body */}
         <main className="flex-1 p-6 space-y-6 max-w-6xl w-full mx-auto animate-slide-up">
           
+          {activeSection === 'overview' && (
+            <div className="grid gap-6 md:grid-cols-2 mt-4">
+              
+              {/* Card 1: Template Management */}
+              <div
+                className="panel p-8 flex flex-col justify-between min-h-[280px] cursor-pointer hover:border-teal/30 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
+                onClick={() => setActiveSection('templates')}
+              >
+                <div className="flex justify-between items-start">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setActiveSection('templates'); }}
+                    className="rounded-full px-4 py-1.5 text-xs font-bold text-teal-700 bg-teal-50 border border-teal-100 hover:bg-teal-100 transition"
+                    type="button"
+                  >
+                    Manage Templates
+                  </button>
+                </div>
+                
+                <div className="mt-8">
+                  <h3 className="text-xl font-extrabold text-slate-800">Template Management</h3>
+                  <p className="mt-3 text-sm text-slate-500 leading-relaxed">
+                    Upload, configure, and maintain standard banking valuation templates. Add document fields and control placeholder mappings dynamically.
+                  </p>
+                </div>
+              </div>
 
+              {/* Card 2: Document Workspace */}
+              <div
+                className="panel p-8 flex flex-col justify-between min-h-[280px] cursor-pointer hover:border-indigo-300 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
+                onClick={() => setActiveSection('permission')}
+              >
+                <div className="flex justify-between items-start">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setActiveSection('permission'); }}
+                    className="rounded-full px-4 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 transition"
+                    type="button"
+                  >
+                    Extract Documents
+                  </button>
+                </div>
+                
+                <div className="mt-8">
+                  <h3 className="text-xl font-extrabold text-slate-800">Document Workspace</h3>
+                  <p className="mt-3 text-sm text-slate-500 leading-relaxed">
+                    Upload scanned loan papers, agreements of sale, building permissions, and work orders to run OCR-based automated information extraction.
+                  </p>
+                </div>
+              </div>
 
-
-
-
+            </div>
+          )}
 
           {/* Report Templates Section */}
           {activeSection === 'templates' && (
             <div className="grid gap-6 xl:grid-cols-[400px_1fr]">
-              {/* Add Template */}
-              <div className="panel p-6 h-fit">
-                <h3 className="font-display text-2xl font-bold text-slate-900 mb-1">
-                  {editingTemplateId ? 'Edit Template Info' : 'Store Template'}
-                </h3>
-                <p className="text-xs text-slate-500 mb-6">
-                  Save mapping schema parameters and upload banking template files.
-                </p>
+              {/* Add/Edit Template Form & Detected Fields */}
+              <div className="flex flex-col gap-6 h-fit">
+                <div className="panel p-6">
+                  <h3 className="font-display text-2xl font-bold text-slate-900 mb-1">
+                    {editingTemplateId ? 'Edit Template Info' : 'Store Template'}
+                  </h3>
+                  <p className="text-xs text-slate-500 mb-6">
+                    Save mapping schema parameters and upload banking template files.
+                  </p>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="label">Template Key ID</label>
-                    <input
-                      className="field"
-                      placeholder="e.g. sbi_retail_2026"
-                      value={templateForm.template_key_id}
-                      onChange={(event) => setTemplateForm({ ...templateForm, template_key_id: event.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="label">Template Name</label>
-                    <input
-                      className="field"
-                      placeholder="e.g. SBI Retail Valuation Layout"
-                      value={templateForm.template_name}
-                      onChange={(event) => setTemplateForm({ ...templateForm, template_name: event.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="label">Associated Bank</label>
-                    <input
-                      className="field"
-                      placeholder="e.g. State Bank of India"
-                      value={templateForm.template_bank}
-                      onChange={(event) => setTemplateForm({ ...templateForm, template_bank: event.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="label">Template Content Mapping (JSON)</label>
-                    <textarea
-                      className="field min-h-36 font-mono text-xs leading-normal bg-slate-50/50"
-                      value={templateForm.template_content_json}
-                      onChange={(event) => setTemplateForm({ ...templateForm, template_content_json: event.target.value })}
-                    />
-                  </div>
-
-                  {/* Drag and drop zone for templates */}
-                  {!editingTemplateId && (
+                  <div className="space-y-4">
                     <div>
-                      <label className="label">Template File (.docx or .pdf)</label>
-                      <div
-                        onDragEnter={(e) => handleDrag(e, setTemplateDragOver)}
-                        onDragOver={(e) => handleDrag(e, setTemplateDragOver)}
-                        onDragLeave={(e) => handleDrag(e, setTemplateDragOver)}
-                        onDrop={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          setTemplateDragOver(false)
-                          const files = e.dataTransfer.files
-                          if (files && files.length > 0) {
-                            setTemplateFile(files[0])
-                            showToast(`Loaded ${files[0].name}`, 'info')
-                          }
-                        }}
-                        className={`border-2 border-dashed rounded-2xl p-6 text-center transition ${templateDragOver ? 'border-teal bg-teal/5' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
-                      >
-                        <input
-                          id="template-upload-input"
-                          type="file"
-                          accept=".docx,.pdf"
-                          className="hidden"
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                              setTemplateFile(e.target.files[0])
+                      <label className="label">Template Name</label>
+                      <input
+                        className="field"
+                        placeholder="e.g. SBI Retail Valuation Layout"
+                        value={templateForm.template_name}
+                        onChange={(event) => setTemplateForm({ ...templateForm, template_name: event.target.value })}
+                      />
+                    </div>
+
+                    {/* Drag and drop zone for templates */}
+                    {!editingTemplateId && (
+                      <div>
+                        <label className="label">Template File (.docx or .pdf)</label>
+                        <div
+                          onDragEnter={(e) => handleDrag(e, setTemplateDragOver)}
+                          onDragOver={(e) => handleDrag(e, setTemplateDragOver)}
+                          onDragLeave={(e) => handleDrag(e, setTemplateDragOver)}
+                          onDrop={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            setTemplateDragOver(false)
+                            const files = e.dataTransfer.files
+                            if (files && files.length > 0) {
+                              setTemplateFile(files[0])
+                              showToast(`Loaded ${files[0].name}`, 'info')
                             }
                           }}
-                        />
-                        <label htmlFor="template-upload-input" className="cursor-pointer flex flex-col items-center">
-                          <svg className="w-8 h-8 text-slate-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-                          <span className="text-xs font-bold text-slate-700">Drag file here or click to select</span>
-                          <span className="text-[10px] text-slate-400 mt-1">Accepts DOCX or PDF layouts</span>
-                        </label>
-                      </div>
-                      
-                      {templateFile && (
-                        <div className="mt-3 flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <svg className="w-5 h-5 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                            <span className="text-xs font-medium text-slate-700 truncate">{templateFile.name}</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setTemplateFile(null)}
-                            className="text-rose-500 hover:bg-rose-50 p-1 rounded-lg"
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                          </button>
+                          className={`border-2 border-dashed rounded-2xl p-6 text-center transition ${templateDragOver ? 'border-teal bg-teal/5' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
+                        >
+                          <input
+                            id="template-upload-input"
+                            type="file"
+                            accept=".docx,.pdf"
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) {
+                                setTemplateFile(e.target.files[0])
+                              }
+                            }}
+                          />
+                          <label htmlFor="template-upload-input" className="cursor-pointer flex flex-col items-center">
+                            <svg className="w-8 h-8 text-slate-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                            <span className="text-xs font-bold text-slate-700">Drag file here or click to select</span>
+                            <span className="text-[10px] text-slate-400 mt-1">Accepts DOCX or PDF layouts</span>
+                          </label>
                         </div>
-                      )}
-                    </div>
-                  )}
+                        
+                        {templateFile && (
+                          <div className="mt-3 flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <svg className="w-5 h-5 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                              <span className="text-xs font-medium text-slate-700 truncate">{templateFile.name}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setTemplateFile(null)}
+                              className="text-rose-500 hover:bg-rose-50 p-1 rounded-lg"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
-                  <div className="flex gap-2 pt-2">
-                    <button
-                      className="btn-primary flex-1"
-                      onClick={handleTemplateSave}
-                      disabled={templateSaving}
-                      type="button"
-                    >
-                      {templateSaving ? 'Saving...' : editingTemplateId ? 'Update Template' : 'Save Template'}
-                    </button>
-                    <button
-                      className="btn-secondary"
-                      onClick={() => { setTemplateForm(emptyTemplate); setTemplateFile(null); setEditingTemplateId(null); }}
-                      type="button"
-                    >
-                      Cancel
-                    </button>
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        className="btn-primary flex-1"
+                        onClick={handleTemplateSave}
+                        disabled={templateSaving}
+                        type="button"
+                      >
+                        {templateSaving ? 'Saving...' : editingTemplateId ? 'Update Template' : 'Save Template'}
+                      </button>
+                      <button
+                        className="btn-secondary"
+                        onClick={() => { setTemplateForm(emptyTemplate); setTemplateFile(null); setEditingTemplateId(null); }}
+                        type="button"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 </div>
+
+                {uploadedTemplateResult && (
+                  <div className="panel p-6 border-emerald-200 bg-emerald-50/30 animate-fade-in">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">✓</span>
+                        <h4 className="font-bold text-slate-850 text-sm">
+                          {uploadedTemplateResult.template_name}
+                        </h4>
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => setUploadedTemplateResult(null)} 
+                        className="text-slate-400 hover:text-slate-650 p-1 rounded-lg hover:bg-emerald-100/30"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="text-xs font-bold text-emerald-800 bg-emerald-100/60 rounded-xl px-3 py-1.5 inline-block mb-4">
+                      {uploadedTemplateResult.field_count} Fields Detected
+                    </div>
+                    <div className="max-h-60 overflow-y-auto border border-slate-100 rounded-2xl bg-white p-3 space-y-2">
+                      {uploadedTemplateResult.fields.map((field, idx) => (
+                        <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-600 py-1 border-b border-slate-50 last:border-0">
+                          <span className="font-bold text-slate-450 min-w-[18px]">{idx + 1}.</span>
+                          <span className="font-semibold text-slate-700">{field}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Template Grid Preview & Report Compiler */}
-              <div className="panel p-6 space-y-6">
-                <div className="flex justify-between items-center">
+              <div className="panel p-6 flex flex-col max-h-[calc(100vh-220px)] min-h-[300px]">
+                <div className="flex justify-between items-center pb-4 border-b border-slate-100 shrink-0">
                   <h3 className="font-display text-2xl font-bold text-slate-900">Registered Layouts</h3>
                 </div>
 
-                {/* Selected Template Compiler Panel */}
-                {selectedTemplateId && (
-                  <div className="rounded-3xl border border-teal/20 bg-teal/5 p-6 shadow-sm animate-fade-in">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <span className="inline-flex rounded-full bg-teal-100 text-teal-800 text-[10px] font-bold px-2.5 py-1 uppercase tracking-wider">
-                          Selected Compilation Template
-                        </span>
-                        <h4 className="mt-2 text-lg font-extrabold text-slate-800">
-                          {templates.find(t => t.template_id === selectedTemplateId)?.template_name}
-                        </h4>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => { setSelectedTemplateId(null); setReportFiles([]); }}
-                        className="text-slate-400 hover:text-slate-600 bg-white/50 p-1.5 rounded-full hover:shadow-sm"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                      </button>
-                    </div>
-
-                    {!mappedData && (
-                      <p className="mt-2 text-xs text-slate-500 leading-relaxed">
-                        Upload the supporting documents (AOS deeds, bank Work Orders, blueprints, RERA certificates) to compile them directly into this valuation template.
-                      </p>
-                    )}
-
-                    <div className="mt-4 space-y-4">
-                      {!mappedData ? (
-                        <>
-                          {/* Report drag and drop zone */}
-                          <div
-                            onDragEnter={(e) => handleDrag(e, setReportDragOver)}
-                            onDragOver={(e) => handleDrag(e, setReportDragOver)}
-                            onDragLeave={(e) => handleDrag(e, setReportDragOver)}
-                            onDrop={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              setReportDragOver(false)
-                              const files = e.dataTransfer.files
-                              if (files && files.length > 0) {
-                                setReportFiles(Array.from(files))
-                                showToast(`Loaded ${files.length} documents for compile`, 'info')
-                              }
-                            }}
-                            className={`border-2 border-dashed rounded-2xl p-6 text-center transition ${reportDragOver ? 'border-teal bg-teal/10' : 'border-teal/20 hover:border-teal/40 bg-white'}`}
-                          >
-                            <input
-                              id="report-files-input"
-                              type="file"
-                              multiple
-                              accept=".pdf,.docx,.jpg,.jpeg,.png,.webp"
-                              className="hidden"
-                              onChange={(e) => {
-                                if (e.target.files) {
-                                  setReportFiles(Array.from(e.target.files))
-                                }
-                              }}
-                            />
-                            <label htmlFor="report-files-input" className="cursor-pointer flex flex-col items-center">
-                              <svg className="w-8 h-8 text-teal mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" /></svg>
-                              <span className="text-xs font-bold text-slate-700">Drag files here or click to select</span>
-                              <span className="text-[10px] text-slate-400 mt-1">Load PDF, DOCX, or scanned images</span>
-                            </label>
-                          </div>
-
-                          {reportFiles.length > 0 && (
-                            <div className="bg-white/80 border border-teal/10 rounded-2xl p-4">
-                              <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Supporting Files ({reportFiles.length})</h5>
-                              <ul className="space-y-1.5 max-h-36 overflow-y-auto pr-2">
-                                {reportFiles.map((f, i) => (
-                                  <li key={i} className="text-xs text-slate-600 flex items-center justify-between p-1.5 bg-slate-50 rounded-lg">
-                                    <span className="truncate pr-4">{f.name}</span>
-                                    <span className="text-[10px] font-mono text-slate-400">{(f.size / 1024).toFixed(0)} KB</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-
-                          <div className="flex flex-col sm:flex-row gap-3">
-                            <button
-                              className="btn-accent flex-1"
-                              onClick={handleDownloadReport}
-                              disabled={reportLoading || mappingReviewLoading}
-                              type="button"
-                            >
-                              {reportLoading ? (
-                                <>
-                                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                  Direct Generate Report
-                                </>
-                              ) : (
-                                <>
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                  Direct Generate Report
-                                </>
-                              )}
-                            </button>
-                            <button
-                              className="btn-secondary flex-1 border-teal/30 hover:border-teal text-teal-800 bg-white"
-                              onClick={handleMapAndReviewFields}
-                              disabled={reportLoading || mappingReviewLoading}
-                              type="button"
-                            >
-                              {mappingReviewLoading ? (
-                                <>
-                                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-teal" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                  Mapping Fields...
-                                </>
-                              ) : (
-                                <>
-                                  <svg className="w-4 h-4 text-teal" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
-                                  Map & Review Fields
-                                </>
-                              )}
-                            </button>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="mt-2 border-t border-slate-200/80 pt-6 animate-fade-in space-y-6">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/5 p-4 rounded-2xl border border-slate-200/50">
-                            <div>
-                              <h4 className="text-sm font-extrabold text-slate-800">Review Mapped Fields</h4>
-                              <p className="text-xs text-slate-500 mt-1">Verify or edit extracted template values prior to document creation.</p>
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={handleGenerateReviewedReport}
-                                disabled={reportLoading}
-                                className="btn-accent px-4 py-2.5 text-xs text-white"
-                                type="button"
-                              >
-                                {reportLoading ? 'Compiling...' : 'Generate Reviewed Report (.DOCX)'}
-                              </button>
-                              <button
-                                onClick={() => { setMappedData(null); setEditingMappedFields({}); }}
-                                className="btn-secondary px-4 py-2.5 text-xs bg-white"
-                                type="button"
-                              >
-                                Reset / Back
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Section Tabs Selector */}
-                          <div className="border-b border-slate-200/60 bg-white/50 flex flex-wrap px-2 rounded-2xl border">
-                            {mappedData.sections.map((section) => (
-                              <button
-                                key={section.name}
-                                className={`subtab py-2.5 ${activeReviewSectionTab === section.name ? 'subtab-active' : 'subtab-inactive'}`}
-                                onClick={() => setActiveReviewSectionTab(section.name)}
-                                type="button"
-                              >
-                                {section.name}
-                              </button>
-                            ))}
-                          </div>
-
-                          {/* Inputs area for current section */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-white p-6 rounded-3xl border border-slate-100 shadow-inner">
-                            {(() => {
-                              const currentSection = mappedData.sections.find(s => s.name === activeReviewSectionTab);
-                              if (!currentSection) return null;
-
-                              const renderFieldRecursive = (field, depth = 0) => {
-                                const isGroup = field.field_type === 'group' || (field.nested_fields && field.nested_fields.length > 0);
-                                const val = editingMappedFields[field.field_code] !== undefined ? editingMappedFields[field.field_code] : (field.extracted_value || '');
-                                const isTextArea = ["property_description", "aos_property_schedule", "property_address", "purchaser_address", "approved_plan_comments", "legal_opinion", "legal_disputes", "prohibited_property_details", "mortgage_details", "ftl_buffer_zone_details", "enactment_details", "govt_enactment_details"].includes(field.field_code);
-
-                                if (isGroup) {
-                                  return (
-                                    <div key={field.field_code} className="col-span-full border-l-2 border-slate-200 pl-4 py-2 my-2 bg-slate-50/20 rounded-r-xl">
-                                      <h5 className="text-xs font-extrabold text-slate-800 mb-3">{field.label || field.field_code}</h5>
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {field.nested_fields.map(child => renderFieldRecursive(child, depth + 1))}
-                                      </div>
-                                    </div>
-                                  );
-                                }
-
-                                const confidencePct = Math.round((field.confidence || 0) * 100);
-                                let badgeColor = "bg-rose-50 text-rose-700 border-rose-100";
-                                if (confidencePct >= 90) badgeColor = "bg-emerald-50 text-emerald-700 border-emerald-100";
-                                else if (confidencePct >= 70) badgeColor = "bg-amber-50 text-amber-700 border-amber-100";
-
-                                return (
-                                  <div key={field.field_code} className={`flex flex-col gap-1.5 ${isTextArea ? 'col-span-full' : ''}`} style={{ paddingLeft: `${depth * 8}px` }}>
-                                    <div className="flex items-center justify-between gap-2">
-                                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-                                        {field.label || field.field_code.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
-                                      </label>
-                                      <div className="flex items-center gap-1.5">
-                                        <span className={`text-[10px] font-bold border rounded-full px-2 py-0.5 ${badgeColor}`}>
-                                          {confidencePct}% Conf
-                                        </span>
-                                        {field.needs_review && (
-                                          <span className="text-[10px] font-bold bg-rose-500 text-white rounded-full px-2 py-0.5 animate-pulse">
-                                            Review Needed
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                    {isTextArea ? (
-                                      <textarea
-                                        rows={3}
-                                        className="w-full bg-slate-50 hover:bg-slate-100/30 border border-slate-200 focus:border-teal focus:bg-white rounded-2xl px-4 py-3 text-sm transition focus:ring-4 focus:ring-teal/15 outline-none font-medium text-slate-700 resize-y min-h-20"
-                                        value={val}
-                                        onChange={(e) => setEditingMappedFields(prev => ({ ...prev, [field.field_code]: e.target.value }))}
-                                      />
-                                    ) : (
-                                      <input
-                                        type="text"
-                                        className="w-full bg-slate-50 hover:bg-slate-100/30 border border-slate-200 focus:border-teal focus:bg-white rounded-2xl px-4 py-3 text-sm transition focus:ring-4 focus:ring-teal/15 outline-none font-medium text-slate-700"
-                                        value={val}
-                                        onChange={(e) => setEditingMappedFields(prev => ({ ...prev, [field.field_code]: e.target.value }))}
-                                      />
-                                    )}
-                                  </div>
-                                );
-                              };
-
-                              return currentSection.fields && currentSection.fields.length > 0 ? (
-                                currentSection.fields.map(field => renderFieldRecursive(field))
-                              ) : (
-                                <div className="col-span-full py-12 text-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-                                  <p className="text-sm text-slate-500 font-medium">No fields mapped in this section.</p>
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
                 {/* Templates List */}
-                {templates.length === 0 ? (
-                  <div className="text-center py-12 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-                    <p className="text-sm text-slate-500 font-medium">No templates saved yet.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {templates.map((record) => {
-                      const isSelected = selectedTemplateId === record.template_id
-                      return (
-                        <div
-                          key={record.template_id}
-                          className={`rounded-2xl border p-5 transition duration-200 ${isSelected ? 'border-teal bg-teal/5 shadow-md shadow-teal/5' : 'border-slate-100 bg-white hover:border-slate-200'}`}
-                        >
-                          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                            <div>
-                              <h4 className="font-bold text-slate-800 text-base">{record.template_name}</h4>
-                              <p className="text-xs text-slate-400 mt-1 font-semibold flex items-center gap-2">
-                                <span className="bg-slate-100 px-2 py-0.5 rounded-md text-slate-500">{record.template_key_id}</span>
-                                <span>{record.template_bank}</span>
-                              </p>
-                              {record.template_preview_text && (
-                                <p className="mt-3 text-xs text-slate-500 leading-relaxed max-h-16 overflow-y-auto bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
-                                  {record.template_preview_text}
-                                </p>
-                              )}
+                <div className="flex-1 overflow-y-auto pr-1 mt-4">
+                  {templates.length === 0 ? (
+                    <div className="text-center py-12 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+                      <p className="text-sm text-slate-500 font-medium">No templates saved yet.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {templates.map((record) => {
+                        const isSelected = selectedTemplateId === record.template_id
+                        return (
+                          <div
+                            key={record.template_id}
+                            className={`rounded-2xl border p-5 transition duration-200 ${isSelected ? 'border-teal bg-teal/5 shadow-md shadow-teal/5' : 'border-slate-100 bg-white hover:border-slate-200'}`}
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                              <div>
+                                <div className="flex items-center gap-3">
+                                  <h4 className="font-bold text-slate-800 text-base">{record.template_name}</h4>
+                                  <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-blue-700 border border-blue-100/50">
+                                    {record.field_count || 0} Fields
+                                  </span>
+                                </div>
+                                {record.template_preview_text && (
+                                  <p className="mt-3 text-xs text-slate-500 leading-relaxed max-h-16 overflow-y-auto bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
+                                    {record.template_preview_text}
+                                  </p>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center gap-2 shrink-0 self-end sm:self-start">
+                                <button
+                                  className="btn-secondary p-1.5 text-slate-500 hover:text-slate-805 rounded-xl"
+                                  onClick={() => toggleTemplateExpand(record.template_id)}
+                                  title="View detected fields"
+                                  type="button"
+                                >
+                                  <svg
+                                    className={`w-4 h-4 transition-transform duration-200 ${expandedTemplateId === record.template_id ? 'rotate-180' : ''}`}
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                                  </svg>
+                                </button>
+                                <button
+                                  className={`btn-secondary px-3 py-1.5 text-xs font-semibold ${isSelected ? 'bg-slate-900 border-slate-900 text-white hover:bg-slate-800 hover:text-white' : ''}`}
+                                  onClick={() => {
+                                    setSelectedTemplateId(record.template_id)
+                                    setActiveSection('permission')
+                                    setWorkspaceStep(2)
+                                    showToast(`Selected template: ${record.template_name}. Proceeding to upload documents.`, 'info')
+                                  }}
+                                  type="button"
+                                >
+                                  {isSelected ? 'Selected' : 'Select'}
+                                </button>
+                                <button
+                                  className="btn-secondary px-3 py-1.5 text-xs font-semibold"
+                                  onClick={() => openEditTemplate(record)}
+                                  type="button"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  className="btn-danger px-3 py-1.5 text-xs font-semibold"
+                                  onClick={() => handleDelete('/templates', record.template_id)}
+                                  type="button"
+                                >
+                                  Delete
+                                </button>
+                              </div>
                             </div>
-                            
-                            <div className="flex gap-2 shrink-0 self-end sm:self-start">
-                              <button
-                                className={`btn-secondary px-3 py-1.5 text-xs font-semibold ${isSelected ? 'bg-slate-900 border-slate-900 text-white hover:bg-slate-800 hover:text-white' : ''}`}
-                                onClick={() => setSelectedTemplateId(record.template_id)}
-                                type="button"
-                              >
-                                {isSelected ? 'Selected' : 'Select'}
-                              </button>
-                              <button
-                                className="btn-secondary px-3 py-1.5 text-xs font-semibold"
-                                onClick={() => openEditTemplate(record)}
-                                type="button"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                className="btn-danger px-3 py-1.5 text-xs font-semibold"
-                                onClick={() => handleDelete('/templates', record.template_id)}
-                                type="button"
-                              >
-                                Delete
-                              </button>
-                            </div>
+
+                            {expandedTemplateId === record.template_id && (
+                              <div className="mt-4 border-t border-slate-100 pt-4 animate-fade-in">
+                                <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Detected Fields List</h5>
+                                {templateFieldsCache[record.template_id] && templateFieldsCache[record.template_id].length > 0 ? (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 bg-slate-50/50 p-3 rounded-2xl border border-slate-100 max-h-48 overflow-y-auto">
+                                    {templateFieldsCache[record.template_id].map((field, idx) => (
+                                      <div key={idx} className="flex items-center gap-1.5 text-xs text-slate-700 bg-white px-2.5 py-1.5 rounded-xl border border-slate-100/50 shadow-sm">
+                                        <span className="font-bold text-slate-400">{idx + 1}.</span>
+                                        <span className="font-semibold text-slate-600 truncate">{field}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-slate-400 italic">No fields detected in this template.</p>
+                                )}
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -1446,287 +1410,418 @@ function App() {
           {/* OCR Permission and Extraction Section */}
           {activeSection === 'permission' && (
             <div className="space-y-6">
-              
-              {/* Full Width Drag and Drop Upload Card */}
-              <div className="panel p-6">
-                <h3 className="font-display text-2xl font-bold text-slate-900 mb-1">AOS & WO Extraction</h3>
-                <p className="text-sm text-slate-500 mb-6">
-                  Drop a valuation deed, sanction order, agreement of sale (AOS), or municipal layout permission to parse information.
-                </p>
+              {/* Workspace Stepper */}
+              <div className="bg-white rounded-3xl p-1.5 border border-slate-100 shadow-sm flex items-center justify-between gap-1 max-w-4xl mx-auto mb-8">
+                {[
+                  { step: 1, label: '1. Select Template' },
+                  { step: 2, label: '2. Upload Documents' },
+                  { step: 3, label: '3. Extract & Review' },
+                  { step: 4, label: '4. Generate Report' }
+                ].map((item) => {
+                  const isActive = workspaceStep === item.step
+                  return (
+                    <button
+                      key={item.step}
+                      onClick={() => {
+                        if (item.step === 1) setWorkspaceStep(1)
+                        else if (item.step === 2 && selectedTemplateId) setWorkspaceStep(2)
+                        else if (item.step === 3 && selectedTemplateId && mappedData) setWorkspaceStep(3)
+                        else if (item.step === 4 && selectedTemplateId && mappedData) setWorkspaceStep(4)
+                      }}
+                      disabled={
+                        (item.step === 2 && !selectedTemplateId) ||
+                        (item.step === 3 && (!selectedTemplateId || !mappedData)) ||
+                        (item.step === 4 && (!selectedTemplateId || !mappedData))
+                      }
+                      className={`flex-1 py-3 text-center text-xs font-bold rounded-2xl transition duration-200 ${
+                        isActive 
+                          ? 'bg-slate-900 text-white shadow-md shadow-slate-900/10' 
+                          : 'text-slate-400 hover:text-slate-600 disabled:opacity-30 disabled:pointer-events-none'
+                      }`}
+                      type="button"
+                    >
+                      {item.label}
+                    </button>
+                  )
+                })}
+              </div>
 
-                <div className="grid gap-6 md:grid-cols-[1fr_200px] items-center">
+              {/* Step 1: Select Template */}
+              {workspaceStep === 1 && (
+                <div className="space-y-6">
+                  <div className="text-center max-w-xl mx-auto">
+                    <h3 className="text-xl font-extrabold text-slate-800">Select Valuation Template</h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Choose the base banking template style for your report compilation.
+                    </p>
+                  </div>
+
+                  {templates.length === 0 ? (
+                    <div className="text-center py-12 border border-dashed border-slate-200 rounded-3xl bg-slate-50/50 max-w-3xl mx-auto">
+                      <p className="text-sm text-slate-500 font-medium mb-3">No templates registered yet.</p>
+                      <button
+                        className="btn-primary py-2 px-4 text-xs"
+                        onClick={() => setActiveSection('templates')}
+                        type="button"
+                      >
+                        Go to Template Management
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="max-w-md mx-auto space-y-6">
+                      <div className="flex flex-col gap-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Choose Valuation Layout</label>
+                        <select
+                          className="field pr-10 appearance-none bg-no-repeat bg-[right_1rem_center] bg-[length:1em_1em]"
+                          style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E")`
+                          }}
+                          value={selectedTemplateId || ''}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            setSelectedTemplateId(val ? Number(val) : null)
+                          }}
+                        >
+                          <option value="">-- Select Template Layout --</option>
+                          {templates.map((record) => (
+                            <option key={record.template_id} value={record.template_id}>
+                              {record.template_name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Display info card of selected template */}
+                      {(() => {
+                        const selectedRecord = templates.find(t => t.template_id === selectedTemplateId)
+                        if (!selectedRecord) return null
+                        return (
+                          <div className="rounded-3xl border border-teal/15 bg-teal/5 p-6 animate-fade-in space-y-3">
+                            <span className="inline-flex rounded-full bg-teal-100/80 text-teal-800 text-[10px] font-bold px-2.5 py-1 uppercase tracking-wider border border-teal-200/30">
+                              Selected Template
+                            </span>
+                            <h4 className="text-base font-extrabold text-slate-800">{selectedRecord.template_name}</h4>
+
+                            {selectedRecord.template_preview_text && (
+                              <p className="text-xs text-slate-500 leading-relaxed bg-white/70 p-3 rounded-2xl border border-slate-100 max-h-24 overflow-y-auto">
+                                {selectedRecord.template_preview_text}
+                              </p>
+                            )}
+                          </div>
+                        )
+                      })()}
+                    </div>
+                  )}
+
+                  {selectedTemplateId && (
+                    <div className="flex justify-end max-w-4xl mx-auto pt-4">
+                      <button
+                        className="btn-accent"
+                        onClick={() => setWorkspaceStep(2)}
+                        type="button"
+                      >
+                        Next: Upload Documents
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Step 2: Upload Documents */}
+              {workspaceStep === 2 && (
+                <div className="space-y-6 max-w-3xl mx-auto">
+                  <div className="text-center">
+                    <h3 className="text-xl font-extrabold text-slate-800">Upload Supporting Documents</h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Upload the supporting deeds, permission letters, and work orders for field extraction.
+                    </p>
+                    {selectedTemplateId && (
+                      <span className="inline-flex rounded-full bg-teal-50 text-teal-800 text-[10px] font-bold px-3 py-1 mt-3 uppercase tracking-wider border border-teal-100/50">
+                        Template: {templates.find(t => t.template_id === selectedTemplateId)?.template_name}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Report drag and drop zone */}
                   <div
-                    onDragEnter={(e) => handleDrag(e, setPermissionDragOver)}
-                    onDragOver={(e) => handleDrag(e, setPermissionDragOver)}
-                    onDragLeave={(e) => handleDrag(e, setPermissionDragOver)}
+                    onDragEnter={(e) => handleDrag(e, setReportDragOver)}
+                    onDragOver={(e) => handleDrag(e, setReportDragOver)}
+                    onDragLeave={(e) => handleDrag(e, setReportDragOver)}
                     onDrop={(e) => {
                       e.preventDefault()
                       e.stopPropagation()
-                      setPermissionDragOver(false)
+                      setReportDragOver(false)
                       const files = e.dataTransfer.files
                       if (files && files.length > 0) {
-                        setPermissionFile(files[0])
-                        showToast(`Loaded document: ${files[0].name}`, 'info')
+                        setReportFiles(Array.from(files))
+                        showToast(`Loaded ${files.length} documents for compile`, 'info')
                       }
                     }}
-                    className={`border-2 border-dashed rounded-3xl p-8 text-center transition ${permissionDragOver ? 'border-teal bg-teal/5' : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'}`}
+                    className={`border-2 border-dashed rounded-3xl p-12 text-center transition ${
+                      reportDragOver ? 'border-teal bg-teal/5' : 'border-slate-200 hover:border-slate-300 bg-white'
+                    }`}
                   >
                     <input
-                      id="permission-upload-input"
+                      id="workspace-files-input"
                       type="file"
-                      accept=".pdf,.docx,.jpg,.jpeg,.png,.webp,.tif,.tiff"
+                      multiple
+                      accept=".pdf,.docx,.jpg,.jpeg,.png,.webp"
                       className="hidden"
                       onChange={(e) => {
-                        if (e.target.files?.[0]) {
-                          setPermissionFile(e.target.files[0])
+                        if (e.target.files) {
+                          setReportFiles(Array.from(e.target.files))
                         }
                       }}
                     />
-                    <label htmlFor="permission-upload-input" className="cursor-pointer flex flex-col items-center">
-                      <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-sm border border-slate-100 text-slate-400 group-hover:text-teal mb-3 transition">
-                        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                    <label htmlFor="workspace-files-input" className="cursor-pointer flex flex-col items-center">
+                      <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 mb-3 border border-slate-100">
+                        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
                       </div>
                       <span className="text-sm font-bold text-slate-700">Drag files here or click to browse</span>
-                      <span className="text-xs text-slate-400 mt-1.5">Supports PDF, DOCX, TIFF, JPG, and PNG files up to 20MB</span>
+                      <span className="text-xs text-slate-400 mt-1">Supports PDF, DOCX, and scanned images</span>
                     </label>
                   </div>
 
-                  <div className="space-y-3">
-                    {permissionFile ? (
-                      <div className="p-4 bg-teal/5 border border-teal/10 rounded-2xl animate-fade-in">
-                        <div className="flex items-center gap-2 mb-2">
-                          <svg className="w-4 h-4 text-teal" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                          <span className="text-xs font-bold text-teal uppercase tracking-wider">File Loaded</span>
-                        </div>
-                        <p className="text-xs font-bold text-slate-800 truncate" title={permissionFile.name}>
-                          {permissionFile.name}
-                        </p>
-                        <p className="text-[10px] text-slate-400 mt-1">
-                          {(permissionFile.size / 1024).toFixed(0)} KB
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="p-4 bg-slate-100 rounded-2xl text-center text-xs text-slate-500 font-medium">
-                        No active file chosen
-                      </div>
-                    )}
-
-                    <div className="flex gap-2">
-                      <button
-                        className="btn-accent flex-1"
-                        onClick={handlePermissionSubmit}
-                        disabled={permissionLoading}
-                        type="button"
-                      >
-                        {permissionLoading ? (
-                          <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                        ) : (
-                          'Extract Details'
-                        )}
-                      </button>
-                      <button
-                        className="btn-secondary px-3"
-                        onClick={() => { setPermissionFile(null); setPermissionResult(null); setEditingAnalysis(null); }}
-                        type="button"
-                      >
-                        Clear
-                      </button>
+                  {reportFiles.length > 0 && (
+                    <div className="panel p-6 bg-white">
+                      <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Supporting Files ({reportFiles.length})</h5>
+                      <ul className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                        {reportFiles.map((f, i) => (
+                          <li key={i} className="text-xs text-slate-600 flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                            <span className="truncate pr-4 font-medium">{f.name}</span>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <span className="text-[10px] font-mono text-slate-400">{(f.size / 1024).toFixed(0)} KB</span>
+                              <button
+                                type="button"
+                                onClick={() => setReportFiles(prev => prev.filter((_, idx) => idx !== i))}
+                                className="text-rose-500 hover:bg-rose-50 p-1 rounded-lg"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
+                  )}
+
+                  <div className="flex gap-4 pt-4">
+                    <button
+                      className="btn-secondary flex-1"
+                      onClick={() => setWorkspaceStep(1)}
+                      type="button"
+                    >
+                      Back to Templates
+                    </button>
+                    <button
+                      className="btn-accent flex-1"
+                      onClick={handleMapAndReviewFields}
+                      disabled={reportFiles.length === 0 || mappingReviewLoading}
+                      type="button"
+                    >
+                      {mappingReviewLoading ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Extracting Fields...
+                        </>
+                      ) : (
+                        'Extract Details & Review'
+                      )}
+                    </button>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Full Width Result Panel - Located in Main space */}
-              {permissionResult ? (
-                <div className="panel overflow-hidden animate-fade-in">
-                  
-                  {/* Results Heading bar */}
-                  <div className="bg-slate-900 p-6 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                      <span className="text-[10px] font-bold text-teal uppercase tracking-widest">Extracted Results</span>
-                      <h4 className="text-xl font-extrabold font-display mt-1">
-                        Permission No: {editingAnalysis?.permission_number || 'Not detected'}
-                      </h4>
-
-                    </div>
-
-                    <div className="flex gap-2.5 shrink-0 self-start md:self-center">
+              {/* Step 3: Extract & Review */}
+              {workspaceStep === 3 && mappedData && (
+                <div className="space-y-6">
+                  {/* Section Tabs Selector */}
+                  <div className="flex flex-wrap gap-2.5 max-w-4xl mx-auto">
+                    {mappedData.sections.map((section) => (
                       <button
-                        className="btn-accent px-4 py-2.5 text-xs text-white"
-                        onClick={() => {
-                          navigator.clipboard.writeText(editingAnalysis?.permission_number || '')
-                          showToast('Permission number copied to clipboard.', 'success')
-                        }}
+                        key={section.name}
+                        className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition ${
+                          activeReviewSectionTab === section.name 
+                            ? 'bg-slate-900 text-white shadow-md' 
+                            : 'bg-white text-slate-500 hover:text-slate-800 border border-slate-100'
+                        }`}
+                        onClick={() => setActiveReviewSectionTab(section.name)}
                         type="button"
                       >
-                        Copy Permission
+                        {section.name}
                       </button>
-                      <button
-                        className="btn-secondary px-4 py-2.5 text-xs bg-white text-slate-900 border-none hover:bg-slate-100"
-                        onClick={handleDownloadPermissionResult}
-                        type="button"
-                      >
-                        Download Results (.DOCX)
-                      </button>
-                    </div>
+                    ))}
                   </div>
 
-                  {/* Main Inputs Content Area */}
-                  <div className="p-6">
+                  {/* Main Inputs Content Area Container */}
+                  <div className="panel p-8 min-h-[300px] flex flex-col justify-between max-w-4xl mx-auto bg-white/95">
                     {(() => {
-                      if (!editingAnalysis) return null
+                      const currentSection = mappedData.sections.find(s => s.name === activeReviewSectionTab);
+                      if (!currentSection) return null;
 
-                      // Helper to render a field dynamically with its label, confidence, validation checks, and text area or input
-                      const renderField = (key, label, isTextArea = false) => {
-                        const val = editingAnalysis[key] !== undefined ? editingAnalysis[key] : ''
-                        const originalField = permissionResult?.analysis?.[key] || {}
-                        const confidence = originalField.final_confidence !== undefined ? originalField.final_confidence : null
-                        const status = originalField.validation_status || 'valid'
-                        const msg = originalField.validation_message || ''
+                      const renderFieldRecursive = (field, depth = 0) => {
+                        const isGroup = field.field_type === 'group' || (field.nested_fields && field.nested_fields.length > 0);
+                        const val = editingMappedFields[field.field_code] !== undefined ? editingMappedFields[field.field_code] : (field.extracted_value || '');
+                        const isTextArea = ["property_description", "aos_property_schedule", "property_address", "purchaser_address", "approved_plan_comments", "legal_opinion", "legal_disputes", "prohibited_property_details", "mortgage_details", "ftl_buffer_zone_details", "enactment_details", "govt_enactment_details"].includes(field.field_code);
 
-                        let confBadge = null
-                        if (confidence !== null && confidence > 0) {
-                          const percentage = Math.round(confidence * 100)
-                          let badgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200"
-                          if (confidence < 0.5) {
-                            badgeClass = "bg-rose-50 text-rose-700 border-rose-200"
-                          } else if (confidence < 0.8) {
-                            badgeClass = "bg-amber-50 text-amber-700 border-amber-200"
-                          }
-                          confBadge = (
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeClass}`}>
-                              {percentage}% Confidence
-                            </span>
-                          )
+                        if (isGroup) {
+                          return (
+                            <div key={field.field_code} className="col-span-full border-l-2 border-slate-200 pl-4 py-2 my-2 bg-slate-50/20 rounded-r-xl">
+                              <h5 className="text-xs font-extrabold text-slate-800 mb-3">{field.label || field.field_code}</h5>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {field.nested_fields.map(child => renderFieldRecursive(child, depth + 1))}
+                              </div>
+                            </div>
+                          );
                         }
 
-                        let borderClass = "border-slate-200 focus:border-teal focus:ring-teal/15"
-                        if (status === 'invalid') {
-                          borderClass = "border-rose-300 focus:border-rose-500 focus:ring-rose-500/15 bg-rose-50/10"
-                        } else if (status === 'warning') {
-                          borderClass = "border-amber-300 focus:border-amber-500 focus:ring-amber-500/15 bg-amber-50/10"
-                        }
+                        const confidencePct = Math.round((field.confidence || 0) * 100);
+                        let badgeColor = "bg-rose-50 text-rose-700 border-rose-100";
+                        if (confidencePct >= 90) badgeColor = "bg-emerald-50 text-emerald-700 border-emerald-100";
+                        else if (confidencePct >= 70) badgeColor = "bg-amber-50 text-amber-700 border-amber-100";
 
                         return (
-                          <div key={key} className="flex flex-col gap-1.5 w-full">
-                            <div className="flex justify-between items-center gap-2">
-                              <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                                {label}
+                          <div key={field.field_code} className={`flex flex-col gap-1.5 ${isTextArea ? 'col-span-full' : ''}`} style={{ paddingLeft: `${depth * 8}px` }}>
+                            <div className="flex items-center justify-between gap-2">
+                              <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                                {field.label || field.field_code.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
                               </label>
-                              {confBadge}
+                              <div className="flex items-center gap-1.5">
+                                <span className={`text-[10px] font-bold border rounded-full px-2 py-0.5 ${badgeColor}`}>
+                                  {confidencePct}% Conf
+                                </span>
+                                {field.needs_review && (
+                                  <span className="text-[10px] font-bold bg-rose-500 text-white rounded-full px-2 py-0.5 animate-pulse">
+                                    Review Needed
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            
                             {isTextArea ? (
                               <textarea
                                 rows={3}
-                                className={`w-full bg-slate-50 hover:bg-slate-100/30 border focus:bg-white rounded-2xl px-4 py-3 text-sm transition focus:ring-4 outline-none font-medium text-slate-700 resize-y min-h-20 ${borderClass}`}
+                                className="w-full bg-slate-50 hover:bg-slate-100/30 border border-slate-200 focus:border-teal focus:bg-white rounded-2xl px-4 py-3 text-sm transition focus:ring-4 focus:ring-teal/15 outline-none font-medium text-slate-700 resize-y min-h-20"
                                 value={val}
-                                onChange={(e) => setEditingAnalysis({ ...editingAnalysis, [key]: e.target.value })}
+                                onChange={(e) => setEditingMappedFields(prev => ({ ...prev, [field.field_code]: e.target.value }))}
                               />
                             ) : (
                               <input
                                 type="text"
-                                className={`w-full bg-slate-50 hover:bg-slate-100/30 border focus:bg-white rounded-2xl px-4 py-3 text-sm transition focus:ring-4 outline-none font-medium text-slate-700 ${borderClass}`}
+                                className="w-full bg-slate-50 hover:bg-slate-100/30 border border-slate-200 focus:border-teal focus:bg-white rounded-2xl px-4 py-3 text-sm transition focus:ring-4 focus:ring-teal/15 outline-none font-medium text-slate-700"
                                 value={val}
-                                onChange={(e) => setEditingAnalysis({ ...editingAnalysis, [key]: e.target.value })}
+                                onChange={(e) => setEditingMappedFields(prev => ({ ...prev, [field.field_code]: e.target.value }))}
                               />
                             )}
-
-                            {status !== 'valid' && msg && (
-                              <div className={`flex items-start gap-1.5 mt-1 text-[11px] font-semibold leading-normal p-2.5 rounded-xl border ${
-                                status === 'invalid' 
-                                  ? 'bg-rose-50 text-rose-800 border-rose-100' 
-                                  : 'bg-amber-50 text-amber-800 border-amber-100'
-                              }`}>
-                                <svg className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${status === 'invalid' ? 'text-rose-600' : 'text-amber-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                </svg>
-                                <span>{msg}</span>
-                              </div>
-                            )}
                           </div>
-                        )
-                      }
+                        );
+                      };
 
-                      return (
-                        <div className="space-y-6">
-                          {/* Grid 1: Fields 1-3 */}
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                            {renderField('inspection_date', '1. Date of inspection')}
-                            {renderField('valuation_date', '2. Date of valuation')}
-                            {renderField('owner_name', '3. Name of the Owner(s)')}
-                          </div>
-
-                          {/* Field 4 */}
-                          <div>
-                            {renderField('purchaser_details', '4. Name of the purchaser(s) and his / their address(es) with Phone no. (details of share of each owner in case of joint ownership)', true)}
-                          </div>
-
-                          {/* Field 5 */}
-                          <div>
-                            {renderField('property_description', '5. Brief description of the property (Including leasehold / freehold etc.)', true)}
-                          </div>
-
-                          {/* Grid 2: Fields 6-9 */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            {renderField('prohibited_property_details', '6. Prohibited Properties Details', true)}
-                            {renderField('legal_opinion', '7. Legal Opinion', true)}
-                            {renderField('mortgage_details', '8. Mortgage Details', true)}
-                            {renderField('ftl_buffer_zone_details', '9. FTL and Buffer Zone Details', true)}
-                          </div>
-
-                          {/* Field 10 Group */}
-                          <div className="p-6 border border-slate-100 bg-slate-50/20 rounded-3xl space-y-5">
-                            <div>
-                              <h5 className="text-sm font-bold text-slate-800">10. Location of property</h5>
-                              <p className="text-xs text-slate-400 mt-0.5">Physical location identifiers and legal boundaries of the property.</p>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                              {renderField('plot_survey_number', 'Plot No. / Survey No.')}
-                              {renderField('door_house_number', 'Door No / House No')}
-                              {renderField('ts_number_village', 'T.S. No. / Village')}
-                              {renderField('ward_taluka', 'Ward / Taluka')}
-                              {renderField('mandal_district', 'Mandal / District')}
-                            </div>
-                          </div>
-
-                          {/* Field 11 */}
-                          <div>
-                            {renderField('property_address', '11. Postal address of the property', true)}
-                          </div>
+                      return currentSection.fields && currentSection.fields.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                          {currentSection.fields.map(field => renderFieldRecursive(field))}
                         </div>
-                      )
+                      ) : (
+                        <div className="flex-1 flex flex-col items-center justify-center py-16 text-center">
+                          <p className="text-sm text-slate-400 font-bold">No fields found in this section.</p>
+                        </div>
+                      );
                     })()}
+
+                    {/* Bottom Buttons - Inside Step 3 panel */}
+                    <div className="flex justify-end gap-3 mt-8 border-t border-slate-100 pt-6">
+                      <button
+                        onClick={handleCopyResults}
+                        className="btn-secondary px-5 py-2.5 text-xs font-bold border border-slate-200 bg-white text-slate-700 flex items-center gap-2 hover:bg-slate-50 transition"
+                        type="button"
+                      >
+                        <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                        </svg>
+                        Copy Results
+                      </button>
+                      <button
+                        onClick={handleSaveChanges}
+                        className="btn-accent px-6 py-2.5 text-xs font-bold text-white bg-teal hover:bg-teal-600 rounded-xl"
+                        type="button"
+                      >
+                        Save Changes
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Extracted Raw OCR Panel */}
-                  {permissionResult.extracted_text && (
-                    <div className="border-t border-slate-100 p-6 bg-slate-50/50">
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Raw Extracted OCR Text</span>
-                        <button
-                          className="btn-secondary py-1.5 px-3 text-xs bg-white"
-                          onClick={() => {
-                            navigator.clipboard.writeText(permissionResult.extracted_text)
-                            showToast('Raw text copied to clipboard.', 'success')
-                          }}
-                          type="button"
-                        >
-                          Copy Raw Text
-                        </button>
-                      </div>
-                      <pre className="max-h-56 overflow-y-auto whitespace-pre-wrap text-[11px] font-mono leading-relaxed bg-slate-900 text-slate-300 p-4 rounded-2xl shadow-inner">
-                        {permissionResult.extracted_text}
-                      </pre>
-                    </div>
-                  )}
+                  {/* Navigation Buttons for Step 3 */}
+                  <div className="flex justify-between max-w-4xl mx-auto pt-4">
+                    <button
+                      className="btn-secondary"
+                      onClick={() => setWorkspaceStep(2)}
+                      type="button"
+                    >
+                      Back to Uploads
+                    </button>
+                    <button
+                      className="btn-primary"
+                      onClick={() => setWorkspaceStep(4)}
+                      type="button"
+                    >
+                      Next: Generate Report
+                    </button>
+                  </div>
                 </div>
-              ) : (
-                <div className="panel p-12 text-center border-dashed border-2 border-slate-200 bg-slate-50/50">
-                  <p className="text-sm font-medium text-slate-500">
-                    No active document processed. Complete the upload form above to see results.
-                  </p>
+              )}
+
+              {/* Step 4: Generate Report */}
+              {workspaceStep === 4 && (
+                <div className="panel p-8 text-center space-y-6 max-w-2xl mx-auto bg-white/95">
+                  <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 mx-auto border border-emerald-100">
+                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-extrabold text-slate-800">Ready to Generate Valuation Report</h4>
+                    <p className="text-xs text-slate-400 mt-2">
+                      Your extracted fields and manual corrections will be compiled into the final DOCX document.
+                    </p>
+                    {selectedTemplateId && (
+                      <span className="inline-flex rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold px-3 py-1 mt-4 uppercase tracking-wider">
+                        Template: {templates.find(t => t.template_id === selectedTemplateId)?.template_name}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-4 justify-center pt-4">
+                    <button
+                      className="btn-secondary"
+                      onClick={() => setWorkspaceStep(3)}
+                      type="button"
+                    >
+                      Back to Review
+                    </button>
+                    <button
+                      className="btn-accent"
+                      onClick={handleGenerateReviewedReport}
+                      disabled={reportLoading}
+                      type="button"
+                    >
+                      {reportLoading ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Compiling Report...
+                        </>
+                      ) : (
+                        'Compile & Download DOCX'
+                      )}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

@@ -1,53 +1,61 @@
 from __future__ import annotations
 
-import re
 from pathlib import Path
+from typing import Any
+
 import docx
-from docx.text.paragraph import Paragraph
-from docx.table import Table
 
 
-def extract_template_fields(docx_path: str | Path) -> list[str]:
+def extract_template_labels(docx_path: str | Path) -> list[dict[str, Any]]:
     """
-    Extracts placeholders matching `{field_name}` from paragraphs and table cells
-    in visual document order in a DOCX template file. Returns a unique list of
-    field names preserving their original order of appearance.
+    Extracts fields from the first column of tables in a DOCX template file.
+    Classifies them as dynamic or static fields following layout heuristics.
+    Returns a unique list of field metadata dicts preserving their order of appearance.
     """
     doc = docx.Document(str(docx_path))
-    found_fields: list[str] = []
+    fields: list[dict[str, Any]] = []
     seen: set[str] = set()
 
-    # Helper function to extract from text
-    def extract_from_text(text: str):
-        if not text:
-            return
-        matches = re.findall(r"\{(.*?)\}", text)
-        for m in matches:
-            cleaned = m.strip()
-            if cleaned and cleaned not in seen:
-                seen.add(cleaned)
-                found_fields.append(cleaned)
-
-    # Recursive function to scan a table
-    def scan_table(table: Table):
+    for table in doc.tables:
         for row in table.rows:
-            for cell in row.cells:
-                # Scan block-level elements inside cell in order
-                for child in cell._tc:
-                    if child.tag.endswith('p'):
-                        p = Paragraph(child, cell)
-                        extract_from_text(p.text)
-                    elif child.tag.endswith('tbl'):
-                        t = Table(child, cell)
-                        scan_table(t)
+            if len(row.cells) < 2:
+                continue
 
-    # Scan body elements in order
-    for child in doc.element.body:
-        if child.tag.endswith('p'):
-            p = Paragraph(child, doc)
-            extract_from_text(p.text)
-        elif child.tag.endswith('tbl'):
-            t = Table(child, doc)
-            scan_table(t)
+            left_cell = row.cells[0].text.strip()
+            right_cell = row.cells[1].text.strip()
 
-    return found_fields
+            # Rule 1: Ignore empty labels
+            if not left_cell:
+                continue
+
+            # Rule 2: Ignore section headers structurally (repeated left=right rows or merged cells)
+            if left_cell == right_cell:
+                continue
+
+            # Rule 6: Remove duplicates (preserving first occurrence)
+            if left_cell in seen:
+                continue
+            seen.add(left_cell)
+
+            # Rule 3 & 4: Classify static vs dynamic fields
+            # Rows whose right cell is empty or contains instructions/placeholders are dynamic fields.
+            is_dynamic = False
+            if not right_cell:
+                is_dynamic = True
+            elif "{" in right_cell or "}" in right_cell:
+                is_dynamic = True
+
+            if is_dynamic:
+                fields.append({
+                    "field_name": left_cell,
+                    "field_type": "dynamic",
+                    "static_value": None
+                })
+            else:
+                fields.append({
+                    "field_name": left_cell,
+                    "field_type": "static",
+                    "static_value": right_cell
+                })
+
+    return fields

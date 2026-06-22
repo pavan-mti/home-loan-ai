@@ -14,6 +14,16 @@ from docx.text.run import Run
 from .documents import STORAGE_ROOT
 
 
+class RenderableValue:
+    def __init__(self, value: Any, confidence: float = 1.0, needs_review: bool = False):
+        self.value = value
+        self.confidence = confidence
+        self.needs_review = needs_review
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+
 class ReportGenerator:
     def generate_docx(self, template_path: str | None, template_content_json: dict[str, Any], field_values: dict[str, Any], output_path: Path) -> Path:
         resolved_template_path = self._resolve_template_path(template_path)

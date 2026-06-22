@@ -32,24 +32,39 @@ class MappingEngine:
 
         # 2. Classify the cleaned documents
         classified_docs = self.classifier.classify_bundle(cleaned_bundle)
+        print(f"[MappingEngine] Document classification results:")
+        if classified_docs:
+            for doc_type, text in classified_docs.items():
+                print(f"  -> {doc_type}: {len(text)} chars")
+        else:
+            print("  -> No documents could be classified (all will use full_text fallback)")
 
-        # 3. Create full combined text for global fallback from ALL documents in the bundle
-        full_text = "\n\n".join(data.get("text", "") for data in cleaned_bundle.values())
+        # 3. Create full combined text for global fallback
+        full_text = "\n\n".join(classified_docs.values())
+        print(f"[MappingEngine] Combined full_text length: {len(full_text)} chars")
 
         # 4. Walk the template sections and extract fields
         sections = template_content_json.get("sections", [])
         mapped_sections: list[dict[str, Any]] = []
+        total_fields = 0
+        extracted_fields = 0
 
         for section in sections:
             mapped_fields: list[dict[str, Any]] = []
             for field in section.get("fields", []):
-                mapped_fields.append(self._map_field(field, classified_docs, full_text))
+                mapped = self._map_field(field, classified_docs, full_text)
+                mapped_fields.append(mapped)
+                if mapped.get("field_type") != "group":
+                    total_fields += 1
+                    if mapped.get("extracted_value"):
+                        extracted_fields += 1
             mapped_sections.append({
                 "name": section.get("name"),
                 "fields": mapped_fields,
                 "tables": section.get("tables", []),
             })
 
+        print(f"[MappingEngine] Field extraction done: {extracted_fields}/{total_fields} fields have values")
         return {"sections": mapped_sections}
 
     def _map_field(

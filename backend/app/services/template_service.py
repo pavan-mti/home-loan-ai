@@ -84,8 +84,8 @@ class TemplateService:
         saved_path = save_upload(upload, "templates")
         
         # 1. Extract placeholders and validate
-        from .template_field_extractor import extract_template_fields
-        placeholders = extract_template_fields(saved_path)
+        from .template_field_extractor import extract_template_labels
+        placeholders = extract_template_labels(saved_path)
         if not placeholders:
             try:
                 saved_path.unlink()
@@ -104,10 +104,15 @@ class TemplateService:
         )
         
         # 2. Insert rows into template_fields
-        for idx, field_name in enumerate(placeholders, start=1):
+        if placeholders:
+            print(placeholders[0])
+            print(type(placeholders[0]))
+        for idx, field_data in enumerate(placeholders, start=1):
             tf = TemplateField(
                 template_id=template.template_id,
-                field_name=field_name,
+                field_name=field_data["field_name"],
+                field_type=field_data["field_type"],
+                static_value=field_data.get("static_value"),
                 display_order=idx
             )
             self.repository.db.add(tf)
@@ -116,8 +121,8 @@ class TemplateService:
         # 3. Print debug logs
         print(f"Template uploaded: {template_name}\n")
         print("Detected placeholders:")
-        for idx, field_name in enumerate(placeholders, start=1):
-            print(f"{idx}. {field_name}")
+        for idx, field_data in enumerate(placeholders, start=1):
+            print(f"{idx}. {field_data['field_name']} ({field_data['field_type']})")
         print(f"\nInserted {len(placeholders)} template fields")
         
         return template.to_dict()
@@ -129,15 +134,19 @@ class TemplateService:
         template_name: str,
         template_bank: str,
         upload: UploadFile,
+        header_template_id: int | None = None,
     ) -> dict[str, Any]:
         saved_path = save_upload(upload, "templates")
         suffix = saved_path.suffix.lower()
+        print(f"[TemplateService] import_template - saved_path: {saved_path}, suffix: {suffix}")
         
         placeholders = []
         if suffix == ".docx":
-            from .template_field_extractor import extract_template_fields
-            placeholders = extract_template_fields(saved_path)
+            from .template_field_extractor import extract_template_labels
+            placeholders = extract_template_labels(saved_path)
+            print(f"[TemplateService] import_template - extract_template_labels found placeholders: {placeholders}")
             if not placeholders:
+                print(f"[TemplateService] import_template - ERROR: placeholders list is empty!")
                 try:
                     saved_path.unlink()
                 except Exception:
@@ -159,10 +168,14 @@ class TemplateService:
         )
         
         if placeholders:
-            for idx, field_name in enumerate(placeholders, start=1):
+            print(placeholders[0])
+            print(type(placeholders[0]))
+            for idx, field_data in enumerate(placeholders, start=1):
                 tf = TemplateField(
                     template_id=template.template_id,
-                    field_name=field_name,
+                    field_name=field_data["field_name"],
+                    field_type=field_data["field_type"],
+                    static_value=field_data.get("static_value"),
                     display_order=idx
                 )
                 self.repository.db.add(tf)
@@ -171,8 +184,8 @@ class TemplateService:
             # Print debug logs
             print(f"Template uploaded: {template_name}\n")
             print("Detected placeholders:")
-            for idx, field_name in enumerate(placeholders, start=1):
-                print(f"{idx}. {field_name}")
+            for idx, field_data in enumerate(placeholders, start=1):
+                print(f"{idx}. {field_data['field_name']} ({field_data['field_type']})")
             print(f"\nInserted {len(placeholders)} template fields")
             
         return template.to_dict()
@@ -222,20 +235,30 @@ class TemplateService:
             {
                 "id": f.id,
                 "field_name": f.field_name,
-                "display_order": f.display_order
+                "display_order": f.display_order,
+                "field_type": f.field_type,
+                "static_value": f.static_value
             }
             for f in fields
         ]
 
+    def get_template_field_count(self, template_id: int) -> int:
+        return self.repository.db.query(TemplateField).filter(TemplateField.template_id == template_id).count()
+
     def get_template_required_fields(self, template_id: int) -> list[str]:
-        field_names = self.get_template_fields(template_id, as_strings=True)
+        fields = (
+            self.repository.db.query(TemplateField)
+            .filter(TemplateField.template_id == template_id, TemplateField.field_type == "dynamic")
+            .order_by(TemplateField.display_order.asc())
+            .all()
+        )
+        field_names = [f.field_name for f in fields]
         required_fields = []
 
         for name in field_names:
             canonical = map_display_name_to_canonical(name)
             if canonical and canonical not in required_fields:
                 required_fields.append(canonical)
-
 
         return required_fields
 
@@ -258,8 +281,8 @@ class TemplateService:
         if not file_path.exists() or not file_path.is_file():
             raise ValueError("No template placeholders detected")
             
-        from .template_field_extractor import extract_template_fields
-        placeholders = extract_template_fields(file_path)
+        from .template_field_extractor import extract_template_labels
+        placeholders = extract_template_labels(file_path)
         if not placeholders:
             raise ValueError("No template placeholders detected")
             
@@ -267,10 +290,15 @@ class TemplateService:
         self.delete_template_fields(template_id)
         
         # Insert new fields
-        for idx, field_name in enumerate(placeholders, start=1):
+        if placeholders:
+            print(placeholders[0])
+            print(type(placeholders[0]))
+        for idx, field_data in enumerate(placeholders, start=1):
             tf = TemplateField(
                 template_id=template_id,
-                field_name=field_name,
+                field_name=field_data["field_name"],
+                field_type=field_data["field_type"],
+                static_value=field_data.get("static_value"),
                 display_order=idx
             )
             self.repository.db.add(tf)
@@ -279,8 +307,8 @@ class TemplateService:
         # Print debug log
         print(f"Template uploaded: {template.template_name}\n")
         print("Detected placeholders:")
-        for idx, field_name in enumerate(placeholders, start=1):
-            print(f"{idx}. {field_name}")
+        for idx, field_data in enumerate(placeholders, start=1):
+            print(f"{idx}. {field_data['field_name']} ({field_data['field_type']})")
         print(f"\nInserted {len(placeholders)} template fields")
         
         return self.get_template_fields(template_id)
@@ -288,16 +316,26 @@ class TemplateService:
     def map_fields(self, template_id: int, upload_paths: list[Path]) -> dict[str, Any]:
         template = self.repository.get_template(template_id)
         if template is None:
+            print(f"[TemplateService] ERROR: Template ID {template_id} not found.")
             return {}
+        print(f"\n[TemplateService] Starting field mapping for template: '{template.template_name}' (ID={template_id})")
+        print(f"[TemplateService] {len(upload_paths)} uploaded file(s) to process.")
         document_bundle = {}
-        for upload_path in upload_paths:
+        for i, upload_path in enumerate(upload_paths, start=1):
             source_name = upload_path.stem.upper()
+            print(f"[TemplateService] ({i}/{len(upload_paths)}) Extracting text from: {upload_path.name}")
+            extracted_text = self.ocr_engine.extract_from_file(upload_path)
+            print(f"[TemplateService] ({i}/{len(upload_paths)}) Extracted {len(extracted_text)} characters from {upload_path.name}")
             document_bundle[source_name] = {
                 "file_name": upload_path.name,
                 "file_path": str(upload_path),
-                "text": self.ocr_engine.extract_from_file(upload_path),
+                "text": extracted_text,
             }
-        return self.mapping_engine.map_template_fields(template.template_content_json, document_bundle)
+        print(f"[TemplateService] All files extracted. Running classification and field mapping...")
+        result = self.mapping_engine.map_template_fields(template.template_content_json, document_bundle)
+        total_sections = len(result.get("sections", []))
+        print(f"[TemplateService] Mapping complete. {total_sections} section(s) mapped.\n")
+        return result
 
     def generate_report(self, template_id: int, field_values: dict[str, Any], output_name: str = "valuation_report.docx") -> Path:
         template = self.repository.get_template(template_id)
@@ -312,4 +350,54 @@ class TemplateService:
             master_dict[k] = RenderableValue(v, 1.0, False)
 
         output_path = STORAGE_ROOT / "reports" / output_name
-        return self.report_generator.generate_docx(template.original_docx_url, master_dict, output_path)
+        return self.report_generator.generate_docx(template.original_docx_url, template.template_content_json, master_dict, output_path)
+
+    def map_saved_fields(self, template_id: int, saved_values: dict[str, Any]) -> dict[str, Any]:
+        template = self.repository.get_template(template_id)
+        if template is None:
+            return {}
+        
+        template_content = template.template_content_json or {}
+        sections = template_content.get("sections", [])
+        mapped_sections = []
+        
+        def map_field_rec(field: dict[str, Any]) -> dict[str, Any]:
+            # Try to find a match in saved_values
+            val = None
+            field_code = field.get("field_code")
+            label = field.get("label")
+            
+            # Match priority:
+            # 1. field_code in saved_values
+            if field_code and field_code in saved_values:
+                val = saved_values[field_code]
+            # 2. map display name of label to canonical
+            elif label:
+                canonical = map_display_name_to_canonical(label)
+                if canonical and canonical in saved_values:
+                    val = saved_values[canonical]
+                elif label in saved_values:
+                    val = saved_values[label]
+            
+            # Recurse for nested fields
+            nested = [map_field_rec(child) for child in field.get("nested_fields", [])]
+            
+            res = dict(field)
+            res["extracted_value"] = val if val is not None else ""
+            res["confidence"] = 1.0 if val is not None else 0.0
+            res["needs_review"] = False if val is not None else True
+            if nested:
+                res["nested_fields"] = nested
+            return res
+
+        for section in sections:
+            mapped_fields = []
+            for field in section.get("fields", []):
+                mapped_fields.append(map_field_rec(field))
+            mapped_sections.append({
+                "name": section.get("name"),
+                "fields": mapped_fields,
+                "tables": section.get("tables", []),
+            })
+            
+        return {"sections": mapped_sections}

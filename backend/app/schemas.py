@@ -123,6 +123,7 @@ class TemplateListItem(BaseModel):
     template_key_id: str
     template_name: str
     template_bank: str
+    field_count: int = 0
     original_docx_url: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
@@ -169,6 +170,8 @@ class TemplateFieldResponse(BaseModel):
     id: int
     field_name: str
     display_order: int
+    field_type: str = "dynamic"
+    static_value: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -179,3 +182,45 @@ class TemplateFieldsGetResponse(BaseModel):
     fields: list[TemplateFieldResponse]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class TemplateUploadResponse(BaseModel):
+    template_id: int
+    template_name: str
+    field_count: int
+    fields: list[str]
+
+
+class TemplateDetailResponse(BaseModel):
+    id: int
+    name: str
+    field_count: int
+    fields: list[TemplateFieldResponse]
+
+
+class HeaderTemplateResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    header_name: str
+    image_path: str
+    is_active: bool
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class CompletionCertificateResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    template_text: str
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class CompletionCertificateUpdate(BaseModel):
+    template_text: str
+
+
+class MapSavedFieldsRequest(BaseModel):
+    document_id: int

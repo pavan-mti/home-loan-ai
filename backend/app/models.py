@@ -95,6 +95,7 @@ class Template(Base, TimestampMixin):
     template_bank: Mapped[str] = mapped_column(String(255), nullable=False)
     template_content_json: Mapped[dict[str, Any]] = mapped_column(JSON_TYPE, nullable=False, default=dict)
     original_docx_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    header_template_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("header_templates.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -120,7 +121,10 @@ class TemplateField(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     template_id: Mapped[int] = mapped_column(ForeignKey("templates.template_id", ondelete="CASCADE"), nullable=False)
     field_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    field_type: Mapped[str] = mapped_column(String(50), default="dynamic", nullable=False)
+    static_value: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     display_order: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     template: Mapped[Template] = relationship("Template", back_populates="fields")
 
@@ -146,4 +150,23 @@ class AuditLog(Base):
     entity: Mapped[str] = mapped_column(String(100), nullable=False)
     entity_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     details_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
-    created_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class HeaderTemplate(Base):
+    __tablename__ = "header_templates"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    header_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    image_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class CompletionCertificateTemplate(Base):
+    __tablename__ = "completion_certificate_templates"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    template_text: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
