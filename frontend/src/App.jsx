@@ -270,6 +270,10 @@ function App() {
   useEffect(() => {
     setMappedData(null)
     setEditingMappedFields({})
+    if (!selectedTemplateId) {
+      setWorkspaceStep(1)
+      setReportFiles([])
+    }
   }, [selectedTemplateId])
 
   const greeting = useMemo(() => {
@@ -664,6 +668,10 @@ function App() {
   }
 
   const handlePermissionSubmit = async () => {
+    if (!selectedTemplateId) {
+      showToast('Please select an extraction layout before uploading documents.', 'warning')
+      return
+    }
     if (!permissionFile) {
       showToast('Please upload or drag a document first.', 'warning')
       return
@@ -672,6 +680,7 @@ function App() {
     try {
       const formData = new FormData()
       formData.append('upload', permissionFile)
+      formData.append('template_id', selectedTemplateId)
       
       showToast('Uploading & parsing document details...', 'info')
       const result = await apiRequest('/documents/permission-number', {
@@ -683,11 +692,20 @@ function App() {
       
       if (result && result.analysis) {
         const flat = {}
-        for (const [key, field] of Object.entries(result.analysis)) {
-          if (field && typeof field === 'object' && 'value' in field) {
-            flat[key] = field.value !== null && field.value !== undefined ? String(field.value) : ''
-          } else {
-            flat[key] = field !== null && field !== undefined ? String(field) : ''
+        if (Array.isArray(result.analysis)) {
+          for (const item of result.analysis) {
+            if (item && typeof item === 'object') {
+              const key = item.canonical_name || item.field_name
+              flat[key] = item.value !== null && item.value !== undefined ? String(item.value) : ''
+            }
+          }
+        } else {
+          for (const [key, field] of Object.entries(result.analysis)) {
+            if (field && typeof field === 'object' && 'value' in field) {
+              flat[key] = field.value !== null && field.value !== undefined ? String(field.value) : ''
+            } else {
+              flat[key] = field !== null && field !== undefined ? String(field) : ''
+            }
           }
         }
         setEditingAnalysis(flat)
@@ -886,9 +904,9 @@ function App() {
 
             <div className="mt-12 grid gap-4 sm:grid-cols-3">
               {[
-                ['Secure Session', 'Bearer tokens and hashed storage', '🔐'],
-                ['Universal OCR', 'PDF, images, scan and docx support', '📄'],
-                ['Structured SQL', 'Relational database architecture', '🗄️'],
+                ['Secure Session', 'Bearer tokens and hashed storage', '≡ƒöÉ'],
+                ['Universal OCR', 'PDF, images, scan and docx support', '≡ƒôä'],
+                ['Structured SQL', 'Relational database architecture', '≡ƒùä∩╕Å'],
               ].map(([title, text, emoji]) => (
                 <div key={title} className="rounded-2xl border border-slate-100 bg-white/50 p-4 transition-all hover:bg-white hover:shadow-sm">
                   <div className="text-xl mb-1">{emoji}</div>
@@ -938,7 +956,7 @@ function App() {
                 <input
                   className="field"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó"
                   value={authForm.password}
                   onChange={(event) => setAuthForm({ ...authForm, password: event.target.value })}
                 />
@@ -949,7 +967,7 @@ function App() {
                   <input
                     className="field"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó"
                     value={authForm.confirmPassword}
                     onChange={(event) => setAuthForm({ ...authForm, confirmPassword: event.target.value })}
                   />
@@ -1269,7 +1287,7 @@ function App() {
                   <div className="panel p-6 border-emerald-200 bg-emerald-50/30 animate-fade-in">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">✓</span>
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">Γ£ô</span>
                         <h4 className="font-bold text-slate-850 text-sm">
                           {uploadedTemplateResult.template_name}
                         </h4>
@@ -1482,7 +1500,7 @@ function App() {
                             setSelectedTemplateId(val ? Number(val) : null)
                           }}
                         >
-                          <option value="">-- Select Template Layout --</option>
+                          <option value="">-- Choose Template (Required) --</option>
                           {templates.map((record) => (
                             <option key={record.template_id} value={record.template_id}>
                               {record.template_name}
@@ -1551,6 +1569,10 @@ function App() {
                       e.preventDefault()
                       e.stopPropagation()
                       setReportDragOver(false)
+                      if (!selectedTemplateId) {
+                        showToast('Please select a template from the list.', 'warning')
+                        return
+                      }
                       const files = e.dataTransfer.files
                       if (files && files.length > 0) {
                         setReportFiles(Array.from(files))
@@ -1568,6 +1590,10 @@ function App() {
                       accept=".pdf,.docx,.jpg,.jpeg,.png,.webp"
                       className="hidden"
                       onChange={(e) => {
+                        if (!selectedTemplateId) {
+                          showToast('Please select a template from the list.', 'warning')
+                          return
+                        }
                         if (e.target.files) {
                           setReportFiles(Array.from(e.target.files))
                         }
@@ -1580,7 +1606,7 @@ function App() {
                         </svg>
                       </div>
                       <span className="text-sm font-bold text-slate-700">Drag files here or click to browse</span>
-                      <span className="text-xs text-slate-400 mt-1">Supports PDF, DOCX, and scanned images</span>
+                      <span className="text-xs text-slate-400 mt-1">Supports PDF, DOCX, and scanned images (Template Selection Required)</span>
                     </label>
                   </div>
 
@@ -1618,9 +1644,9 @@ function App() {
                       Back to Templates
                     </button>
                     <button
-                      className="btn-accent flex-1"
+                      className={`btn-accent flex-1 ${(!selectedTemplateId || reportFiles.length === 0 || mappingReviewLoading) ? 'opacity-50 pointer-events-none' : ''}`}
                       onClick={handleMapAndReviewFields}
-                      disabled={reportFiles.length === 0 || mappingReviewLoading}
+                      disabled={!selectedTemplateId || reportFiles.length === 0 || mappingReviewLoading}
                       type="button"
                     >
                       {mappingReviewLoading ? (
@@ -1631,6 +1657,8 @@ function App() {
                           </svg>
                           Extracting Fields...
                         </>
+                      ) : !selectedTemplateId ? (
+                        'Select Template to Extract'
                       ) : (
                         'Extract Details & Review'
                       )}
@@ -1671,6 +1699,16 @@ function App() {
                         const val = editingMappedFields[field.field_code] !== undefined ? editingMappedFields[field.field_code] : (field.extracted_value || '');
                         const isTextArea = ["property_description", "aos_property_schedule", "property_address", "purchaser_address", "approved_plan_comments", "legal_opinion", "legal_disputes", "prohibited_property_details", "mortgage_details", "ftl_buffer_zone_details", "enactment_details", "govt_enactment_details"].includes(field.field_code);
 
+                        if (field.field_type === 'SECTION') {
+                          return (
+                            <div key={field.field_code} className="col-span-full border-b border-slate-200 pb-2 mt-4 mb-2">
+                              <h4 className="text-sm font-extrabold text-slate-800 tracking-wide uppercase">
+                                {field.label || field.field_code.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
+                              </h4>
+                            </div>
+                          );
+                        }
+
                         if (isGroup) {
                           return (
                             <div key={field.field_code} className="col-span-full border-l-2 border-slate-200 pl-4 py-2 my-2 bg-slate-50/20 rounded-r-xl">
@@ -1682,6 +1720,7 @@ function App() {
                           );
                         }
 
+                        const isManual = field.field_type === 'MANUAL';
                         const confidencePct = Math.round((field.confidence || 0) * 100);
                         let badgeColor = "bg-rose-50 text-rose-700 border-rose-100";
                         if (confidencePct >= 90) badgeColor = "bg-emerald-50 text-emerald-700 border-emerald-100";
@@ -1693,16 +1732,18 @@ function App() {
                               <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">
                                 {field.label || field.field_code.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
                               </label>
-                              <div className="flex items-center gap-1.5">
-                                <span className={`text-[10px] font-bold border rounded-full px-2 py-0.5 ${badgeColor}`}>
-                                  {confidencePct}% Conf
-                                </span>
-                                {field.needs_review && (
-                                  <span className="text-[10px] font-bold bg-rose-500 text-white rounded-full px-2 py-0.5 animate-pulse">
-                                    Review Needed
+                              {!isManual && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className={`text-[10px] font-bold border rounded-full px-2 py-0.5 ${badgeColor}`}>
+                                    {confidencePct}% Conf
                                   </span>
-                                )}
-                              </div>
+                                  {field.needs_review && (
+                                    <span className="text-[10px] font-bold bg-rose-500 text-white rounded-full px-2 py-0.5 animate-pulse">
+                                      Review Needed
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                             </div>
                             {isTextArea ? (
                               <textarea

@@ -10,11 +10,17 @@ if hasattr(sys.stdout, "reconfigure"):
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", line_buffering=False)
 
+from pathlib import Path
+from dotenv import load_dotenv
+ROOT_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(ROOT_DIR / ".env", override=True)
+load_dotenv(ROOT_DIR.parent / ".env", override=True)
+
 import json
 from datetime import datetime, timedelta
 from typing import Any
 
-from fastapi import Depends, FastAPI, File, Header, Form, HTTPException, UploadFile, status
+from fastapi import Depends, FastAPI, File, Header, Form, HTTPException, UploadFile, status, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
@@ -86,6 +92,52 @@ def _ensure_database() -> None:
         if "static_value" not in tf_columns:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE template_fields ADD COLUMN static_value VARCHAR(1000)"))
+
+        # One-time data migration for existing TemplateFields
+        from .database import SessionLocal
+        from .models import TemplateField, Template
+        from .services.template_parser import classify_field_type
+
+        with SessionLocal() as db:
+            unmigrated = db.query(TemplateField).filter(
+                TemplateField.field_type.notin_(["AUTO", "MANUAL", "SECTION"])
+            ).all()
+            if unmigrated:
+                print(f"[Migration] Classifying and updating {len(unmigrated)} existing template fields...")
+                for tf in unmigrated:
+                    tf.field_type = classify_field_type(tf.field_name)
+                db.commit()
+                print("[Migration] Fields migration completed successfully.")
+
+            # Migrate template_content_json for existing templates
+            templates = db.query(Template).all()
+            migrated_templates = 0
+            for t in templates:
+                content = t.template_content_json
+                if not content or "sections" not in content:
+                    continue
+                modified = False
+                
+                def migrate_fields_rec(fields_list):
+                    nonlocal modified
+                    for f in fields_list:
+                        curr_type = f.get("field_type")
+                        if curr_type not in ("AUTO", "MANUAL", "SECTION"):
+                            f["field_type"] = classify_field_type(f.get("label") or "")
+                            modified = True
+                        nested = f.get("nested_fields")
+                        if nested:
+                            migrate_fields_rec(nested)
+                            
+                for section in content["sections"]:
+                    migrate_fields_rec(section.get("fields", []))
+                
+                if modified:
+                    t.template_content_json = dict(content)
+                    migrated_templates += 1
+            if migrated_templates > 0:
+                db.commit()
+                print(f"[Migration] Migrated template_content_json for {migrated_templates} templates.")
     except Exception as e:
         print(f"Database migration error: {e}")
 
@@ -476,7 +528,7 @@ def get_template(template_id: int, template_service: TemplateService = Depends(g
     if template is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not found")
     
-    fields = template_service.get_template_fields(template_id)
+    fields = template_service.get_template_fields(template_id, as_strings=False)
     return {
         "id": template["id"],
         "name": template["template_name"],
@@ -494,7 +546,7 @@ def get_template_fields_endpoint(
     if template is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not found")
     
-    fields = template_service.get_template_fields(template_id)
+    fields = template_service.get_template_fields(template_id, as_strings=False)
     return {
         "template_id": template_id,
         "template_name": template["template_name"],
@@ -531,8 +583,31 @@ def map_template_fields(
 
 
 @app.post("/templates/{template_id}/generate-report")
-def generate_report(template_id: int, field_values: dict[str, Any], template_service: TemplateService = Depends(get_template_service)) -> dict[str, Any]:
-    output_path = template_service.generate_report(template_id, field_values)
+def generate_report(
+    template_id: int,
+    field_values: dict[str, Any],
+    header_id: int | None = Query(default=None),
+    db: Session = Depends(get_db),
+    template_service: TemplateService = Depends(get_template_service)
+) -> dict[str, Any]:
+    header_image_path = None
+    if header_id:
+        from .models import HeaderTemplate
+        header_temp = db.get(HeaderTemplate, header_id)
+        if header_temp:
+            from pathlib import Path
+            header_image_path = STORAGE_ROOT / "headers" / Path(header_temp.image_path).name
+    else:
+        # Fallback to template's default header
+        template = template_service.repository.get_template(template_id)
+        if template and template.header_template_id:
+            from .models import HeaderTemplate
+            header_temp = db.get(HeaderTemplate, template.header_template_id)
+            if header_temp:
+                from pathlib import Path
+                header_image_path = STORAGE_ROOT / "headers" / Path(header_temp.image_path).name
+
+    output_path = template_service.generate_report(template_id, field_values, header_image_path=header_image_path)
     try:
         relative_url = output_path.relative_to(STORAGE_ROOT).as_posix()
         report_url = f"/storage/{relative_url}"
@@ -544,7 +619,9 @@ def generate_report(template_id: int, field_values: dict[str, Any], template_ser
 @app.post("/reports/generate/{template_id}")
 async def generate_report_endpoint(
     template_id: int,
+    header_id: int | None = Query(default=None),
     files: list[UploadFile] = File(...),
+    db: Session = Depends(get_db),
     template_service: TemplateService = Depends(get_template_service),
 ) -> FileResponse:
     template = template_service.repository.get_template(template_id)
@@ -583,9 +660,23 @@ async def generate_report_endpoint(
     for section in mapped_data.get("sections", []):
         walk_fields(section.get("fields", []))
 
+    header_image_path = None
+    if header_id:
+        from .models import HeaderTemplate
+        header_temp = db.get(HeaderTemplate, header_id)
+        if header_temp:
+            from pathlib import Path
+            header_image_path = STORAGE_ROOT / "headers" / Path(header_temp.image_path).name
+    elif template and template.header_template_id:
+        from .models import HeaderTemplate
+        header_temp = db.get(HeaderTemplate, template.header_template_id)
+        if header_temp:
+            from pathlib import Path
+            header_image_path = STORAGE_ROOT / "headers" / Path(header_temp.image_path).name
+
     import uuid
     output_name = f"report_{uuid.uuid4().hex}.docx"
-    generated_file = template_service.generate_report(template_id, field_values, output_name=output_name)
+    generated_file = template_service.generate_report(template_id, field_values, output_name=output_name, header_image_path=header_image_path)
 
     return FileResponse(
         path=str(generated_file),
@@ -596,21 +687,45 @@ async def generate_report_endpoint(
 
 @app.post("/documents/permission-number", response_model=PermissionUploadResponse)
 async def get_permission_number(
-    upload: UploadFile = File(...),
+    file: UploadFile | None = File(default=None),
+    upload: UploadFile | None = File(default=None),
+    template_id: int | None = Form(default=None),
     db: Session = Depends(get_db),
     current_user: Freelancer = Depends(get_current_user),
+    template_service: TemplateService = Depends(get_template_service),
 ) -> PermissionUploadResponse:
-    saved_path = save_upload(upload, "documents")
+    actual_file = file or upload
+    if not actual_file:
+        raise HTTPException(status_code=400, detail="No file uploaded")
+        
+    if template_id is None:
+        raise HTTPException(status_code=400, detail="Please select a template before extraction.")
+        
+    from .models import Template
+    template = db.get(Template, template_id)
+    if not template:
+        raise HTTPException(status_code=400, detail="Please select a template before extraction.")
+
+    saved_path = save_upload(actual_file, "documents")
     extracted_text = extract_text_from_upload(saved_path)
-    analysis = analyze_document(saved_path)
     
-    permission_field = analysis.get("permission_number")
-    permission_number = permission_field.get("value") if isinstance(permission_field, dict) else None
+    required_fields = template_service.get_template_required_fields(template_id)
+    print(f"[Backend Preparation] Fetching fields for template_id={template_id}")
+    print(f"[Backend Preparation] required_fields: {required_fields}")
+        
+    analysis = analyze_document(saved_path, required_fields)
+    
+    permission_number = None
+    for item in analysis:
+        if item.get("canonical_name") == "permission_number":
+            permission_number = item.get("value")
+            break
+                
     if not permission_number:
         permission_number = extract_permission_number(extracted_text)
 
     document_record = PermissionDocument(
-        file_name=upload.filename or saved_path.name,
+        file_name=actual_file.filename or saved_path.name,
         file_path=str(saved_path),
         extracted_text=extracted_text,
         permission_number=permission_number,
@@ -635,12 +750,21 @@ async def get_permission_number(
         permission_number=permission_number,
         extracted_text=extracted_text,
         analysis=analysis,
+        required_fields=required_fields,
     )
 
 
-@app.get("/documents/analysis", response_model=ExtractionResponse)
-def preview_document_analysis(text: str, current_user: Freelancer = Depends(get_current_user)) -> ExtractionResponse:
-    return ExtractionResponse(**analyze_document(text))
+@app.get("/documents/analysis")
+def preview_document_analysis(
+    text: str,
+    template_id: int | None = None,
+    template_service: TemplateService = Depends(get_template_service),
+    current_user: Freelancer = Depends(get_current_user)
+) -> list[dict[str, Any]]:
+    if template_id is None:
+        raise HTTPException(status_code=400, detail="Please select a template before extraction.")
+    required_fields = template_service.get_template_required_fields(template_id)
+    return analyze_document(text, required_fields)
 
 
 @app.get("/documents/{document_id}/download-json", response_model=dict[str, Any])
@@ -683,17 +807,23 @@ def update_document_analysis(
     if not doc or doc.created_by_user_id != current_user.user_id:
         raise HTTPException(status_code=404, detail="Document not found")
         
-    current_json = dict(doc.extracted_json)
+    current_list = list(doc.extracted_json) if isinstance(doc.extracted_json, list) else []
+    canonical_to_item = {item.get("canonical_name"): item for item in current_list if isinstance(item, dict)}
+    
     for k, v in payload.items():
-        if k in current_json:
-            if isinstance(current_json[k], dict):
-                current_json[k]["value"] = v
-            else:
-                current_json[k] = v
+        if k in canonical_to_item:
+            canonical_to_item[k]["value"] = v
         else:
-            current_json[k] = {"value": v}
+            new_item = {
+                "canonical_name": k,
+                "field_name": k.replace("_", " ").title(),
+                "value": v,
+                "confidence": 100
+            }
+            current_list.append(new_item)
+            canonical_to_item[k] = new_item
             
-    doc.extracted_json = current_json
+    doc.extracted_json = current_list
     if "permission_number" in payload:
         doc.permission_number = payload["permission_number"]
         
@@ -746,6 +876,12 @@ async def create_header_template(
     if suffix not in {".png", ".jpg", ".jpeg"}:
         raise HTTPException(status_code=400, detail="Only JPG, JPEG, and PNG files are allowed")
         
+    # 5MB size limit validation
+    content = await file.read()
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size must be less than 5MB")
+    await file.seek(0)
+
     filename = f"{uuid.uuid4().hex}{suffix}"
     saved_path = headers_dir / filename
     
@@ -790,6 +926,12 @@ async def update_header_template(
         if suffix not in {".png", ".jpg", ".jpeg"}:
             raise HTTPException(status_code=400, detail="Only JPG, JPEG, and PNG files are allowed")
             
+        # 5MB size limit validation
+        content = await file.read()
+        if len(content) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File size must be less than 5MB")
+        await file.seek(0)
+
         try:
             old_path = STORAGE_ROOT / "headers" / Path(header.image_path).name
             if old_path.exists() and old_path.is_file():

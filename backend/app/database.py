@@ -6,6 +6,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.pool import NullPool
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -17,8 +18,17 @@ DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_SQLITE_URL)
 engine_kwargs: dict[str, object] = {"future": True}
 if DATABASE_URL.startswith("sqlite"):
     engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    # PostgreSQL settings
+    engine_kwargs["pool_pre_ping"] = True
+    engine_kwargs["pool_recycle"] = 300
 
-engine = create_engine(DATABASE_URL, **engine_kwargs)
+engine = create_engine(
+    DATABASE_URL,
+    future=True,
+    pool_pre_ping=True,
+    poolclass=NullPool
+)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 Base = declarative_base()
 

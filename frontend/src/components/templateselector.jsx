@@ -1,2 +1,49 @@
-"import React, { useEffect, useState } from 'react';\n\nexport default function TemplateSelector({ templates, selectedTemplate, onSelectTemplate, apiRequest, token }) {\n  const [fields, setFields] = useState([]);\n  const [loading, setLoading] = useState(false);\n\n  useEffect(() => {\n    if (!selectedTemplate) {\n      setFields([]);\n      return;\n    }\n\n    setLoading(true);\n    apiRequest(`/templates/${selectedTemplate.template_id}/fields`, { token })\n      .then(res => {\n        setFields(res.fields || []);\n      })\n      .catch(err => {\n        console.error(\"Error fetching template fields:\", err);\n      })\n      .finally(() => {\n        setLoading(false);\n      });\n  }, [selectedTemplate, apiRequest, token]);\n\n  const handleSelect = (e) => {\n    const id = parseInt(e.target.value);\n    const template = templates.find(t => t.template_id === id);\n    onSelectTemplate(template || null);\n  };\n\n  return (\n    <div className=\"space-y-6\">\n      <div className=\"panel p-6 bg-white border border-slate-100 rounded-3xl shadow-sm\">\n        <h3 className=\"text-xl font-bold text-slate-800 mb-2\">Select Template</h3>\n        <p className=\"text-xs text-slate-500 mb-6\">Select a standard banking valuation template to configure the extraction target schema.</p>\n\n        <div className=\"flex flex-col gap-2\">\n          <label className=\"text-xs font-bold text-slate-500 uppercase tracking-wide\">Choose Template Layout</label>\n          <select\n            className=\"w-full bg-slate-50 hover:bg-slate-100/30 border border-slate-200 focus:border-teal focus:bg-white rounded-2xl px-4 py-3 text-sm transition focus:ring-4 focus:ring-teal/15 outline-none font-medium text-slate-700\"\n            value={selectedTemplate?.template_id || ''}\n            onChange={handleSelect}\n          >\n            <option value=\"\">-- Choose Template --</option>\n            {templates.map((tpl) => (\n              <option key={tpl.template_id} value={tpl.template_id}>\n                {tpl.template_name
+"import React, { useEffect, useState } from 'react';
+
+export default function TemplateSelector({ templates, selectedTemplate, onSelectTemplate, apiRequest, token }) {
+  const [fields, setFields] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!selectedTemplate) {
+      setFields([]);
+      return;
+    }
+
+    setLoading(true);
+    apiRequest(`/templates/${selectedTemplate.template_id}/fields`, { token })
+      .then(res => {
+        setFields(res.fields || []);
+      })
+      .catch(err => {
+        console.error(\"Error fetching template fields:\", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [selectedTemplate, apiRequest, token]);
+
+  const handleSelect = (e) => {
+    const id = parseInt(e.target.value);
+    const template = templates.find(t => t.template_id === id);
+    onSelectTemplate(template || null);
+  };
+
+  return (
+    <div className=\"space-y-6\">
+      <div className=\"panel p-6 bg-white border border-slate-100 rounded-3xl shadow-sm\">
+        <h3 className=\"text-xl font-bold text-slate-800 mb-2\">Select Template</h3>
+        <p className=\"text-xs text-slate-500 mb-6\">Select a standard banking valuation template to configure the extraction target schema.</p>
+
+        <div className=\"flex flex-col gap-2\">
+          <label className=\"text-xs font-bold text-slate-500 uppercase tracking-wide\">Choose Template Layout</label>
+          <select
+            className=\"w-full bg-slate-50 hover:bg-slate-100/30 border border-slate-200 focus:border-teal focus:bg-white rounded-2xl px-4 py-3 text-sm transition focus:ring-4 focus:ring-teal/15 outline-none font-medium text-slate-700\"
+            value={selectedTemplate?.template_id || ''}
+            onChange={handleSelect}
+          >
+            <option value=\"\">-- Choose Template --</option>
+            {templates.map((tpl) => (
+              <option key={tpl.template_id} value={tpl.template_id}>
+                {tpl.template_name
 <truncated 3111 bytes>

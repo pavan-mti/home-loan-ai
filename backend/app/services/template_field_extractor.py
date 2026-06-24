@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 import docx
+from .template_parser import classify_field_type
 
 
 def extract_template_labels(docx_path: str | Path) -> list[dict[str, Any]]:
@@ -45,17 +46,10 @@ def extract_template_labels(docx_path: str | Path) -> list[dict[str, Any]]:
             elif "{" in right_cell or "}" in right_cell:
                 is_dynamic = True
 
-            if is_dynamic:
-                fields.append({
-                    "field_name": left_cell,
-                    "field_type": "dynamic",
-                    "static_value": None
-                })
-            else:
-                fields.append({
-                    "field_name": left_cell,
-                    "field_type": "static",
-                    "static_value": right_cell
-                })
+            fields.append({
+                "field_name": left_cell,
+                "field_type": classify_field_type(left_cell),
+                "static_value": None if is_dynamic else right_cell
+            })
 
     return fields

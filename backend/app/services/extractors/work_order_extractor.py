@@ -5,19 +5,22 @@ from .base import BaseExtractor
 
 class WorkOrderExtractor(BaseExtractor):
     def extract(self, text: str, page_results: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
-        clean_text = text.replace("|", " ")
-        permission_number = self._extract_permission_number(clean_text)
-        
+        req = getattr(self, "required_fields", None)
+        permission_number = None
         source_page = None
         ocr_conf = 0.0
         regex_conf = 0.0
         final_conf = 0.0
         
-        if permission_number:
-            source_page = self._find_source_page_for_line(permission_number, page_results) + 1
-            ocr_conf = self._get_ocr_confidence(permission_number, source_page - 1, page_results)
-            regex_conf = 0.95
-            final_conf = (0.7 * ocr_conf) + (0.3 * regex_conf)
+        if req is None or "permission_number" in req:
+            clean_text = text.replace("|", " ")
+            permission_number = self._extract_permission_number(clean_text)
+            
+            if permission_number:
+                source_page = self._find_source_page_for_line(permission_number, page_results) + 1
+                ocr_conf = self._get_ocr_confidence(permission_number, source_page - 1, page_results)
+                regex_conf = 0.95
+                final_conf = (0.7 * ocr_conf) + (0.3 * regex_conf)
             
         wo_party_name = self.extract_field_pipeline(text, "wo_party_name", page_results)
         return {

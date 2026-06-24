@@ -162,7 +162,8 @@ class PermissionUploadResponse(BaseModel):
     document_id: int
     permission_number: str | None = None
     extracted_text: str
-    analysis: dict[str, Any] | list[dict[str, Any]]
+    analysis: list[dict[str, Any]]
+    required_fields: list[str]
 
 
 

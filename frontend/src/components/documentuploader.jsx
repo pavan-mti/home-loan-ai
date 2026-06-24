@@ -1,2 +1,58 @@
-"import React, { useRef, useState } from 'react';\n\nconst DOCUMENT_SLOTS = [\n  { key: 'agreement', label: 'Agreement', description: 'Agreement copy document (.pdf/.docx)' },\n  { key: 'aos', label: 'AOS', description: 'Agreement of Sale copy (.pdf/.docx)' },\n  { key: 'work_order', label: 'Work Order', description: 'Construction work order (.pdf/.docx)' },\n  { key: 'sale_deed', label: 'Sale Deed', description: 'Property registered sale deed (.pdf/.docx)' },\n  { key: 'other', label: 'Other Documents', description: 'Any auxiliary layouts/permissions (.pdf/.docx/.jpg/.png)' }\n];\n\nexport default function DocumentUploader({ files, onFilesChange, onStartExtraction, loading }) {\n  const [dragOverKey, setDragOverKey] = useState(null);\n\n  const handleFileChange = (key, file) => {\n    onFilesChange({\n      ...files,\n      [key]: file\n    });\n  };\n\n  const handleDrag = (e, key, state) => {\n    e.preventDefault();\n    e.stopPropagation();\n    if (state) {\n      setDragOverKey(key);\n    } else {\n      setDragOverKey(null);\n    }\n  };\n\n  const handleDrop = (e, key) => {\n    e.preventDefault();\n    e.stopPropagation();\n    setDragOverKey(null);\n    const droppedFiles = e.dataTransfer.files;\n    if (droppedFiles && droppedFiles.length > 0) {\n      handleFileChange(key, droppedFiles[0]);\n    }\n  };\n\n  const clearFile = (key) => {\n    const nextFiles = { ...files };\n    delete nextFiles[key];\n    onFilesChange(nextFiles);\n  };\n\n  const fileCount = Object.keys(files).length;\n\n  return (\n    <div className=\"space-y-6\">\n      <div className=\"panel p-6 bg-white border border-slate-100 rounded-3xl shadow-sm\">\n        <h3 className=\"text-xl font-bold text-slate-800 mb-1\">Upload Documents</h3>\n        <p className=\"text-xs text-slate-500 mb-6\">Provide the target files below. Files will be scanned and mapped to the selected template schema.</p>\n\n        <div className=\"grid gap-4 md:grid-cols-2\">\n          {DOCUMENT_SLOTS.map((slot) => {\n            const file = files[slot.key
+"import React, { useRef, useState } from 'react';
+
+const DOCUMENT_SLOTS = [
+  { key: 'agreement', label: 'Agreement', description: 'Agreement copy document (.pdf/.docx)' },
+  { key: 'aos', label: 'AOS', description: 'Agreement of Sale copy (.pdf/.docx)' },
+  { key: 'work_order', label: 'Work Order', description: 'Construction work order (.pdf/.docx)' },
+  { key: 'sale_deed', label: 'Sale Deed', description: 'Property registered sale deed (.pdf/.docx)' },
+  { key: 'other', label: 'Other Documents', description: 'Any auxiliary layouts/permissions (.pdf/.docx/.jpg/.png)' }
+];
+
+export default function DocumentUploader({ files, onFilesChange, onStartExtraction, loading }) {
+  const [dragOverKey, setDragOverKey] = useState(null);
+
+  const handleFileChange = (key, file) => {
+    onFilesChange({
+      ...files,
+      [key]: file
+    });
+  };
+
+  const handleDrag = (e, key, state) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (state) {
+      setDragOverKey(key);
+    } else {
+      setDragOverKey(null);
+    }
+  };
+
+  const handleDrop = (e, key) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverKey(null);
+    const droppedFiles = e.dataTransfer.files;
+    if (droppedFiles && droppedFiles.length > 0) {
+      handleFileChange(key, droppedFiles[0]);
+    }
+  };
+
+  const clearFile = (key) => {
+    const nextFiles = { ...files };
+    delete nextFiles[key];
+    onFilesChange(nextFiles);
+  };
+
+  const fileCount = Object.keys(files).length;
+
+  return (
+    <div className=\"space-y-6\">
+      <div className=\"panel p-6 bg-white border border-slate-100 rounded-3xl shadow-sm\">
+        <h3 className=\"text-xl font-bold text-slate-800 mb-1\">Upload Documents</h3>
+        <p className=\"text-xs text-slate-500 mb-6\">Provide the target files below. Files will be scanned and mapped to the selected template schema.</p>
+
+        <div className=\"grid gap-4 md:grid-cols-2\">
+          {DOCUMENT_SLOTS.map((slot) => {
+            const file = files[slot.key
 <truncated 5152 bytes>

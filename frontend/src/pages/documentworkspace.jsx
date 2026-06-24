@@ -1,2 +1,61 @@
-"import React, { useState, useEffect } from 'react';\nimport TemplateSelector from '../components/TemplateSelector';\nimport DocumentUploader from '../components/DocumentUploader';\nimport ExtractionResults from '../components/ExtractionResults';\nimport ReportGenerator from '../components/ReportGenerator';\n\nexport default function DocumentWorkspace({ apiRequest, token, showToast }) {\n  const [activeTab, setActiveTab] = useState('template'); // template | documents | results | report\n  const [templates, setTemplates] = useState([]);\n  const [selectedTemplate, setSelectedTemplate] = useState(null);\n  const [uploadedFiles, setUploadedFiles] = useState({});\n  const [mappedData, setMappedData] = useState(null);\n\n  const [extractionLoading, setExtractionLoading] = useState(false);\n  const [reportLoading, setReportLoading] = useState(false);\n\n  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';\n\n  // Fetch templates list\n  const loadTemplates = async () => {\n    if (!token) return;\n    try {\n      const res = await apiRequest('/templates', { token });\n      setTemplates(res || []);\n    } catch (err) {\n      showToast(err.message, 'error');\n    }\n  };\n\n  useEffect(() => {\n    loadTemplates();\n  }, [token]);\n\n  const handleSelectTemplate = (template) => {\n    setSelectedTemplate(template);\n    // Reset down-stream state on template change\n    setUploadedFiles({});\n    setMappedData(null);\n    if (template) {\n      setActiveTab('documents');\n    }\n  };\n\n  const handleStartExtraction = async () => {\n    if (!selectedTemplate) {\n      showToast('Please select a template first.', 'warning');\n      return;\n    }\n    const fileList = Object.values(uploadedFiles);\n    if (fileList.length === 0) {\n      showToast('Please upload at least one document.', 'warning');\n      return;\n    }\n\n    setExtractionLoading(true);\n    showToast('Running text extraction and mapping...', 'info');\n\n    try {\n      const formData = new FormData();\n      for (const f
+"import React, { useState, useEffect } from 'react';
+import TemplateSelector from '../components/TemplateSelector';
+import DocumentUploader from '../components/DocumentUploader';
+import ExtractionResults from '../components/ExtractionResults';
+import ReportGenerator from '../components/ReportGenerator';
+
+export default function DocumentWorkspace({ apiRequest, token, showToast }) {
+  const [activeTab, setActiveTab] = useState('template'); // template | documents | results | report
+  const [templates, setTemplates] = useState([]);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [uploadedFiles, setUploadedFiles] = useState({});
+  const [mappedData, setMappedData] = useState(null);
+
+  const [extractionLoading, setExtractionLoading] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
+
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
+  // Fetch templates list
+  const loadTemplates = async () => {
+    if (!token) return;
+    try {
+      const res = await apiRequest('/templates', { token });
+      setTemplates(res || []);
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  useEffect(() => {
+    loadTemplates();
+  }, [token]);
+
+  const handleSelectTemplate = (template) => {
+    setSelectedTemplate(template);
+    // Reset down-stream state on template change
+    setUploadedFiles({});
+    setMappedData(null);
+    if (template) {
+      setActiveTab('documents');
+    }
+  };
+
+  const handleStartExtraction = async () => {
+    if (!selectedTemplate) {
+      showToast('Please select a template first.', 'warning');
+      return;
+    }
+    const fileList = Object.values(uploadedFiles);
+    if (fileList.length === 0) {
+      showToast('Please upload at least one document.', 'warning');
+      return;
+    }
+
+    setExtractionLoading(true);
+    showToast('Running text extraction and mapping...', 'info');
+
+    try {
+      const formData = new FormData();
+      for (const f
 <truncated 6866 bytes>

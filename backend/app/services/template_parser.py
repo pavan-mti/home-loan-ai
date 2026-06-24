@@ -12,6 +12,30 @@ from docx.text.paragraph import Paragraph
 from ..schemas import TemplateContentSpec, TemplateFieldSpec, TemplateSectionSpec, TemplateTableSpec
 
 
+def classify_field_type(field_name: str) -> str:
+    name_clean = field_name.strip()
+    name_upper = name_clean.upper()
+    
+    # 1. SECTION: starts with SECTION or matches roman numeral headings
+    if name_upper.startswith("SECTION"):
+        return "SECTION"
+    
+    # Roman numeral headings (e.g. I. GENERAL, VII. VALUATION SUMMARY)
+    if re.match(r"^(I|II|III|IV|V|VI|VII|VIII|IX|X)\.?\s+", name_upper) or re.match(r"^(I|II|III|IV|V|VI|VII|VIII|IX|X)\.?$", name_upper):
+        return "SECTION"
+        
+    # 2. MANUAL: contains keywords
+    manual_keywords = {
+        "guideline value", "fair market value", "distress value", "realizable value",
+        "remarks", "risk", "valuer", "marketability", "recommendation"
+    }
+    name_lower = name_clean.lower()
+    if any(kw in name_lower for kw in manual_keywords):
+        return "MANUAL"
+        
+    return "AUTO"
+
+
 def _iter_block_items(document: DocxDocument) -> Iterable[Paragraph | Table]:
     for child in document.element.body.iterchildren():
         if child.tag.endswith("}p"):
@@ -191,10 +215,8 @@ def parse_template_docx(file_path: Path) -> dict[str, Any]:
             return
         if current_field.get("nested_fields"):
             current_field["field_type"] = "group"
-        elif current_field.get("static_value") and not current_field.get("keywords"):
-            current_field["field_type"] = "static"
-        elif current_field.get("document_source") or current_field.get("keywords"):
-            current_field["field_type"] = current_field.get("field_type") or "text"
+        else:
+            current_field["field_type"] = classify_field_type(current_field.get("label") or "")
         current_section["fields"].append(current_field)
         current_field = None
 
@@ -206,7 +228,7 @@ def parse_template_docx(file_path: Path) -> dict[str, Any]:
             "field_code": base.get("field_code"),
             "document_source": base.get("document_source"),
             "keywords": base.get("keywords", []),
-            "field_type": base.get("field_type", "text"),
+            "field_type": classify_field_type(base.get("label") or ""),
             "static_value": base.get("static_value"),
             "dynamic_value": base.get("dynamic_value"),
             "raw_text": base.get("raw_text"),
@@ -249,7 +271,34 @@ def parse_template_docx(file_path: Path) -> dict[str, Any]:
     if not sections:
         sections = [current_section]
 
+    for section in sections:
+        if not section.get("fields"):
+            generated_fields = []
+            seen_codes = set()
+            for table in section.get("tables", []):
+                rows = table.get("rows", [])
+                for row in rows:
+                    if not row or len(row) < 1:
+                        continue
+                    first_cell = row[0].strip()
+                    if not first_cell:
+                        continue
+                    field_code = _slugify(first_cell)
+                    if field_code in seen_codes:
+                        continue
+                    seen_codes.add(field_code)
+                    generated_fields.append({
+                        "label": first_cell,
+                        "field_code": field_code,
+                        "field_type": classify_field_type(first_cell),
+                        "keywords": [first_cell],
+                    })
+            section["fields"] = generated_fields
+
     content = TemplateContentSpec(sections=sections)
+    print("\n========== FINAL TEMPLATE CONTENT ==========")
+    print(content.model_dump())
+    print("===========================================\n")
     return content.model_dump()
 
 

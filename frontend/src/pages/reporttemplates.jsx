@@ -1,2 +1,58 @@
-"import React, { useState, useEffect } from 'react';\n\nconst emptyTemplate = {\n  template_key_id: '',\n  template_name: '',\n  template_bank: '',\n  template_content_json: '{\\n  \"applicant_name\": \"\",\\n  \"survey_number\": \"\"\\n}',\n  header_template_id: '',\n};\n\nexport default function ReportTemplates({ apiRequest, token, showToast }) {\n  const [templates, setTemplates] = useState([]);\n  const [headerTemplates, setHeaderTemplates] = useState([]);\n  const [certificateText, setCertificateText] = useState('');\n  const [activeTemplateSubTab, setActiveTemplateSubTab] = useState('templates'); // templates | headers | certificate\n\n  const [templateForm, setTemplateForm] = useState(emptyTemplate);\n  const [headerForm, setHeaderForm] = useState({ header_name: '', is_active: true });\n\n  const [templateFile, setTemplateFile] = useState(null);\n  const [headerFile, setHeaderFile] = useState(null);\n  const [previewUrl, setPreviewUrl] = useState('');\n\n  const [editingTemplateId, setEditingTemplateId] = useState(null);\n  const [editingHeaderId, setEditingHeaderId] = useState(null);\n\n  const [templateSaving, setTemplateSaving] = useState(false);\n  const [headerSaving, setHeaderSaving] = useState(false);\n  const [certificateSaving, setCertificateSaving] = useState(false);\n  const [isEditingCertificate, setIsEditingCertificate] = useState(false);\n\n  const [templateDragOver, setTemplateDragOver] = useState(false);\n  const [headerDragOver, setHeaderDragOver] = useState(false);\n\n  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';\n\n  useEffect(() => {\n    if (!headerFile) {\n      if (editingHeaderId) {\n        const h = headerTemplates.find(x => x.id === editingHeaderId);\n        setPreviewUrl(h ? `${API_BASE}${h.image_path}` : '');\n      } else {\n        setPreviewUrl('');\n      }\n      return;\n    }\n\n    const objectUrl = URL.createObjectURL(headerFile);\n    setPreviewUrl(objectUrl);\n\n    return () => {\n      URL.revokeObjectURL(objectUrl);\n    };\n  }
+"import React, { useState, useEffect } from 'react';
+
+const emptyTemplate = {
+  template_key_id: '',
+  template_name: '',
+  template_bank: '',
+  template_content_json: '{\
+  \"applicant_name\": \"\",\
+  \"survey_number\": \"\"\
+}',
+  header_template_id: '',
+};
+
+export default function ReportTemplates({ apiRequest, token, showToast }) {
+  const [templates, setTemplates] = useState([]);
+  const [headerTemplates, setHeaderTemplates] = useState([]);
+  const [certificateText, setCertificateText] = useState('');
+  const [activeTemplateSubTab, setActiveTemplateSubTab] = useState('templates'); // templates | headers | certificate
+
+  const [templateForm, setTemplateForm] = useState(emptyTemplate);
+  const [headerForm, setHeaderForm] = useState({ header_name: '', is_active: true });
+
+  const [templateFile, setTemplateFile] = useState(null);
+  const [headerFile, setHeaderFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+
+  const [editingTemplateId, setEditingTemplateId] = useState(null);
+  const [editingHeaderId, setEditingHeaderId] = useState(null);
+
+  const [templateSaving, setTemplateSaving] = useState(false);
+  const [headerSaving, setHeaderSaving] = useState(false);
+  const [certificateSaving, setCertificateSaving] = useState(false);
+  const [isEditingCertificate, setIsEditingCertificate] = useState(false);
+
+  const [templateDragOver, setTemplateDragOver] = useState(false);
+  const [headerDragOver, setHeaderDragOver] = useState(false);
+
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
+  useEffect(() => {
+    if (!headerFile) {
+      if (editingHeaderId) {
+        const h = headerTemplates.find(x => x.id === editingHeaderId);
+        setPreviewUrl(h ? `${API_BASE}${h.image_path}` : '');
+      } else {
+        setPreviewUrl('');
+      }
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(headerFile);
+    setPreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }
 <truncated 27745 bytes>

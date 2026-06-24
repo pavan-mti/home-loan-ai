@@ -308,100 +308,1607 @@ def extract_field_by_labels(
     }
 
 FIELD_LABELS = {
-    "applicant_name": [
-        "Name of Applicant", "Applicant Name", "ApplicantName", "Applicant", "Sri/Smt.", "Mrs.", "Mr.", "First Party",
-        "Smt.", "Smt", "Sri.", "Sri", "Mr.", "Mr", "Mrs.", "Mrs"
+    
+
+    # ─── PARTIES ───────────────────────────────────────────────────────────────
+    "name_of_the_owner_s": [
+        "Name of Owner", "Name of the Owner", "Name of the Owner(s)",
+        "Owner Name", "Owner's Name", "Owners Name", "Name of Owners",
+        "Applicant Name", "Borrower Name", "Mortgagor Name",
+        "Land Owner Name", "Property Owner", "Title Holder",
+        "Name of Proprietor", "Vendor Name", "First Party Name",
+        "Land Owner", "Owner / Applicant", "Malik Ka Naam",
+        "Bhu Swami", "Bhuswami", "Swami Ka Naam",
+        "Name of the Vendor", "Seller Name", "Grantor Name",
+        "Name of Applicant", "Customer Name", "Account Holder Name",
+        "Naame of Owner", "Nmae of Owner", "Ownr Name",
+        "Owenr Name", "Nam of Owner", "Onwer Name",
+        # AOS-specific
+        "First Party", "Land Owner / Vendor", "Vendor",
+        "Name of the First Party", "FIRST PARTY / LAND OWNER / VENDOR",
+        "Absolute Owner", "Peaceful Possessor",
+        "W/o", "S/o", "D/o", "H/o",  # relation prefixes often parsed as labels
     ],
-    "owner_name": [
-        "Owner Name", "Name of Owner", "OwnerName", "Owner", "Vendor", "Landowner", "Land Owner", "Second Party",
-        "Smt.", "Smt", "Sri.", "Sri", "Mr.", "Mr", "Mrs.", "Mrs"
+
+    "purchaser_name": [
+        "Name of Purchaser", "Name of the Purchaser", "Purchaser Name",
+        "Name of the Purchaser(s)", "Vendee Name", "Buyer Name",
+        "Name of Buyer", "Name of Vendee", "Second Party Name",
+        "Allottee Name", "Name of Allottee", "Transferee Name",
+        "Name of Transferee", "Name of Borrower", "Loan Applicant",
+        "Name of Applicant", "Co-Applicant Name", "Name of Co-Applicant",
+        "Khareedaar Ka Naam", "Krideta", "Purchaser / Vendee",
+        "Purchasr Name", "Purchaser Nmae", "Puchaser Name",
+        # AOS-specific
+        "Vendee", "IN FAVOUR OF", "In Favour Of", "In favor of",
+        "Name of the Vendee", "VENDEE", "Purchaser / Allottee",
+        "Second Party", "Name of Second Party",
     ],
-    "property_address": [
-        "Property Address", "PropertyAddress", "Address", "Site Address", "R/o.", "R/o", "Resident of",
-        "situated at", "situated in", "Project Title", "site at", "site at:"
+
+    "developer_name": [
+        "Developer Name", "Name of Developer", "Builder Name",
+        "Name of Builder", "Promoter Name", "Name of Promoter",
+        "Contractor Name", "Second Party", "Developer / Builder",
+        "Construction Company", "Project Developer", "Society Name",
+        "Name of Society", "Housing Society", "Nirman Karta",
+        # AOS/WO-specific
+        "Developer / Second Party", "DEVELOPER", "Name of the Developer",
+        "M/s", "M/S", "Company Name", "Pvt Ltd", "Private Limited",
+        "Second Party(ies)", "SECOND PARTY(IES)/CONTRACTOR(S)",
+        "Contractor", "Registered Company", "Company",
+        "Rep. by its Manager", "Authorised Signatory", "Authorized Signatory",
     ],
-    "survey_number": [
-        "Survey Number", "Survey No.", "Survey No", "SurveyNo", "Sy No.", "Sy No", "SyNo", "SURVEY NO", "Survey No./Gramkhantam/Abadi",
-        "Survey Nos.", "Survey Nos", "Survey No's.", "Survey No's", "Survey Numbers", "Sy Nos.", "Sy Nos", "Sy.Nos.", "Sy.Nos"
+
+    "vendor_name": [
+        "Vendor Name", "Name of Vendor", "Seller", "First Party",
+        "Grantor", "Transferor", "Seller Name", "Vikretha",
+        "Vikreta Ka Naam",
+        # AOS-specific
+        "VENDOR", "Vendor", "Land Owner / Vendor",
+        "FIRST PARTY / LAND OWNER / VENDOR",
+        "Sole Owner", "Absolute Owner and Peaceful Possessor",
+        "Name of Land Owner",
     ],
-    "door_number": [
-        "Door Number", "Door No.", "Door No", "D.No.", "D No.", "D No", "H.No.", "House No", "Flat No", "Flat Number", "Door/House No."
+
+    "power_of_attorney_holder": [
+        "Power of Attorney Holder", "POA Holder", "GPA Holder",
+        "General Power of Attorney Holder", "Attorney Holder",
+        "Authorized Signatory", "Authorised Signatory",
+        "PA Holder", "Attorney Name", "Agent Name",
+        "Power of Attorney", "GPA", "GPOA",
+        # AOS-specific
+        "Development Agreement cum General Power of Attorney Holder",
+        "DA cum GPA Holder", "REPRESENTED BY HER DEVELOPMENT AGREEMENT",
+        "Rep. by Manager", "Manager", "Represented By",
+        "Development Agreement cum GPA", "DA-GPA Holder",
+        "Rep. by its Manager",
     ],
-    "village": [
-        "Village", "Village Name", "Mouza", "Gram Panchayat"
+
+    "relation": [
+        "W/o", "S/o", "D/o", "H/o", "C/o",
+        "Wife of", "Son of", "Daughter of", "Husband of",
+        "Care of", "Relative of",
+        "Late", "L/o",
     ],
-    "mandal": [
-        "Mandal", "Mandal Name", "Tehsil", "Tahsil", "Taluka"
+
+    "witness_1": [
+        "Witness 1", "Witness No. 1", "First Witness", "Sakshi 1",
+        "Gawah 1", "Witness-1", "W1", "Witness Name 1",
+        "WITNESSES: 1", "Witnesses 1.", "Witnesss 1",
     ],
-    "district": [
-        "District", "Dist.", "Dist"
+
+    "witness_2": [
+        "Witness 2", "Witness No. 2", "Second Witness", "Sakshi 2",
+        "Gawah 2", "Witness-2", "W2", "Witness Name 2",
+        "WITNESSES: 2", "Witnesses 2.", "Witnesss 2",
     ],
-    "built_up_area_sqft": [
-        "Built-up Area", "Built Up Area", "Builtup Area", "Built-upArea", "BuiltUpArea", "built-up area as per sanctioned plan",
-        "Area (Sq.Mt.)", "Area(Sq.Mt.)", "Area (Sq. Mtrs)", "Area(Sq. Mtrs)"
+
+    "aadhar_number": [
+        "Aadhar No", "Aadhaar No", "Aadhar Number", "Aadhaar Number",
+        "UIDAI No", "UID No", "Aadhar Card No", "Aadhaar Card Number",
+        "Aadhar No.", "AADHAR NO", "AADHAAR NO", "Adhar No",
+        "Aadhar ID", "UID", "Unique ID", "Aadhar", "Aadhaar",
+        # AOS-specific OCR patterns
+        "AADHAR NO:", "Aadhaar No.", "Aadhaar No:",
+        "Aadhar No :", "(AADHAR NO:", "(Aadhaar No.",
+        "Aadhar Number:", "UIDAI Number",
     ],
-    "land_area_sqyd": [
-        "Land Area", "LandArea", "Extent of Land", "Plot Area", "PlotArea",
-        "Net Plot Area", "Net Area of Plot", "Area of Plot", "Net Plot Area (Sq. Mtrs)"
+
+    "pan_number": [
+        "PAN No", "PAN Number", "PAN Card No", "Permanent Account Number",
+        "PAN No.", "PAN", "IT PAN", "Income Tax PAN",
+        "PAN Card Number", "PAN-No", "PAN Num",
+        "(PAN No.", "(PAN No:", "PAN No:", "PAN No :",
+        "PAN Number:", "PAN Card No:",
     ],
-    "built_up_area": [
-        "Built-up Area", "Built Up Area", "Builtup Area", "Built-upArea", "BuiltUpArea", "built-up area as per sanctioned plan",
-        "Area (Sq.Mt.)", "Area(Sq.Mt.)", "Area (Sq. Mtrs)", "Area(Sq. Mtrs)"
+
+    "age": [
+        "Age", "Aged About", "Age of Person", "Date of Birth",
+        "DOB", "Age (Years)", "Age in Years",
+        "aged about", "Aged about", "aged",
+        "years", "Age:", "Age :",
     ],
-    "land_area": [
-        "Land Area", "LandArea", "Extent of Land", "Plot Area", "PlotArea",
-        "Net Plot Area", "Net Area of Plot", "Area of Plot", "Net Plot Area (Sq. Mtrs)"
+
+    "occupation": [
+        "Occupation", "Profession", "Vyavsay", "Occupation/Profession",
+        "Nature of Work", "Employment", "Job",
+        "Occupation:", "Occupation :", "Business",
+        "Pvt Employee", "Private Employee", "Government Employee",
+        "Self Employed", "Retired", "Housewife",
     ],
+
+    "cell_number": [
+        "Cell", "Cell No", "Mobile", "Mobile No", "Phone No",
+        "Contact No", "Mobile Number", "Phone Number",
+        "Cell Number", "Contact Number", "Tel No", "Telephone No",
+        "Ph No", "Mob No", "Contact", "Mobile / Phone",
+        "Cell:", "Cell No:", "Cell No.",
+        "Cell: 8008806408",  # OCR may pick up value inline
+    ],
+
+    "residential_address": [
+        "Residential Address", "Address", "R/o", "Resident of",
+        "Permanent Address", "Home Address", "Residing at",
+        "Address of Owner", "Address of Applicant",
+        "House Address", "Current Address", "Present Address",
+        "Correspondence Address", "Niwas Sthal",
+        "Resident of", "Residing at", "R/o.",
+        "Address of Vendee", "Address of Vendor",
+        "Residing", "Resident", "Resides at",
+        "H. No.", "H No", "House No",
+    ],
+
+    # ─── PROPERTY IDENTIFICATION ───────────────────────────────────────────────
+    "survey_no": [
+        "Survey No", "Survey No.", "Survey Number", "Sy No",
+        "Sy. No", "Survey Nos", "S.No", "S. No.",
+        "Svy No", "Khasra No", "Khasra Number", "Plot Survey No",
+        "Survey / Khasra No", "Dag No", "Daag No",
+        "Bhoomi Survey No", "Field No", "Gunta No",
+        "Hissa No", "Sub-Division No", "RS No", "TS No",
+        "Revenue Survey No", "Sruvey No", "Survay No",
+        "Survy No", "Survey N0",
+        # AOS-specific
+        "Survey Nos.", "Survey Nos", "in Survey Nos.",
+        "Survey Nos. 90", "Sy Nos", "Survey No 90",
+        "Survey No. 90", "Survey Nos.90",
+        "90/ఄ", "92/ఄ",  # Telugu script survey numbers
+    ],
+
+    "plot_no": [
+        "Plot No", "Plot No.", "Plot Number", "Plot Nos",
+        "Door No", "Door No.", "House No", "House Number",
+        "Door No / House No", "Door / House No",
+        "Municipal No", "Municipal Door No", "Property No",
+        "Flat No", "Unit No", "Shop No", "Site No",
+        "Block No", "Lot No", "Premises No",
+        "Bhukhand Sankhya", "Khasra Plot No",
+        "Plt No", "Plto No", "Door Noo", "H No", "H. No",
+        # AOS-specific
+        "Door No.17-3-131", "Door No.17-3-131/B",
+        "Door No 17-3-131", "Premises bearing Door No",
+        "Municipal Premises Door No", "Municipal Premises",
+        "Premises Door No", "Door No (Old)", "Door No (New)",
+        "Old PTIN", "New PTIN",
+    ],
+
+    "ptin_no": [
+        "PTIN No", "PTIN", "PTIN Number", "Property Tax ID",
+        "Property Tax Identification No", "Tax ID No",
+        "GHMC PTIN", "Municipal PTIN", "Patta No",
+        # AOS-specific
+        "PTIN No.", "PTIN:", "PTIN No:",
+        "PTIN: 1220310604", "PTIN: 1221700489",
+        "PTIN (Old)", "PTIN (New)", "Old PTIN", "New PTIN",
+    ],
+
+    "t_s_no_village": [
+        "T.S. No", "T.S. No.", "TS No", "TS Number",
+        "T.S. No / Village", "Village", "Village Name",
+        "Gram", "Gaon", "Panchayat Village",
+        "Revenue Village", "Mandal / Village", "Hobli",
+        "T S No", "TS No / Village", "Township Survey No",
+        "Town Survey No", "Municipal Survey No",
+        "T.S No", "T.S.No", "TS. No",
+        # AOS-specific
+        "situated at", "Situated at", "situated at BANDLAGUDA",
+        "Location", "Place", "Locality Name",
+    ],
+
+    "ward_taluka": [
+        "Ward", "Taluka", "Ward / Taluka", "Ward/Taluka",
+        "Taluk", "Tehsil", "Tahsil", "Tahasil",
+        "Ward No", "Ward Number", "Revenue Taluka",
+        "Mandal", "Circle", "Zone", "Division",
+        "Municipal Ward", "Corporation Ward",
+        "Wrd / Taluka", "Ward / Taluk",
+        # AOS-specific
+        "under GHMC", "GHMC", "GHMC Ramachandrapuram",
+        "under GHMC Ramachandrapuram",
+    ],
+
+    "mandal_district": [
+        "Mandal", "District", "Mandal / District", "Mandal/District",
+        "Dist", "Dist.", "Revenue District", "Revenue Mandal",
+        "Mandal Name", "District Name", "Zila",
+        "Zilah", "Jilla", "Revenue Circle",
+        "Tehsil / District", "Block / District",
+        "Mandal / Dist", "Mandal-District",
+        # AOS-specific
+        "Sanga Reddy District", "Sangareddy District",
+        "Sangareddy Dt", "Sangareddy", "Sanga Reddy",
+        "K.V.Rangareddy District", "Rangareddy District",
+        "Rangareddy Dt", "Medak", "Medak TG",
+    ],
+
+    "city_town": [
+        "City", "City / Town", "Town", "City/Town",
+        "Municipality", "Municipal Area", "Corporation",
+        "Urban Area", "Nagar", "Sheher",
+        "Gram Panchayat", "Taluk HQ", "District HQ",
+        "City Name", "Town Name", "Locality",
+        "Cty / Town", "Cit / Town",
+        # AOS-specific
+        "Hyderabad", "Bandlaguda", "BANDLAGUDA",
+        "Narsingi", "Puppalaguda", "Patancheru",
+        "Kokapet", "Goshala",
+    ],
+
+    "postal_address_of_the_property": [
+        "Postal Address of the Property", "Property Address",
+        "Address of Property", "Address of the Property",
+        "Site Address", "Flat Address", "House Address",
+        "Location Address", "Property Location",
+        "Registered Address", "Situated At",
+        "Postal Address", "Full Address",
+        "Complete Address", "Asset Address",
+        "Sampatti Ka Pata", "Postal Adress",
+        "Proprty Address", "Addres of Property",
+        # AOS-specific
+        "situated at BANDLAGUDA", "Premises bearing",
+        "in Premises bearing", "in Survey Nos.",
+        "under GHMC Ramachandrapuram",
+        "Sanga Reddy District, Telangana State",
+        "Telangana State", "Telangana",
+    ],
+
+    "flat_no": [
+        "Flat No", "Flat No.", "Flat Number", "Unit No",
+        "Unit Number", "Apartment No", "Apartment Number",
+        "Flat / Unit No", "Flat Nos", "Flat No (East)",
+        "Flat No (West)", "Flat No (North)", "Flat No (South)",
+        # AOS-specific
+        "Semi-Finished Flat No.", "Semi-Finished Flat No",
+        "Flat No.502", "Flat No.502(EAST)", "Flat 502",
+        "Flat No 502", "Unit 502", "Flat No.502 (EAST)",
+        "Semi-Finished Flat", "Flat No(East)", "Flat No(West)",
+    ],
+
+    "building_name": [
+        "Building Name", "Project Name", "Name of Building",
+        "Name of Project", "Apartment Name", "Complex Name",
+        "Society Name", "Colony Name", "Layout Name",
+        "Housing Project", "Scheme Name", "Tower Name",
+        # AOS-specific
+        "GBR Barcelona", "\"GBR Barcelona\"",
+        "building names as", "building named as",
+        "the building names as", "Residential Complex",
+        "Name of Complex", "Project",
+    ],
+
+    "floor_no": [
+        "Floor No", "Floor Number", "Floor", "Level",
+        "Storey", "Floor / Level", "Ground Floor",
+        "Stilt Floor", "Upper Floor", "Basement",
+        "G+F", "Floor Nos",
+        # AOS-specific
+        "5th Floor", "5th floor", "Fifth Floor",
+        "Stilt / Parking + Upper 5 Floors",
+        "Stilt + Upper 5 Floors",
+        "Upper 5 Floors",
+        "G+5", "G + 5", "Stilt+5",
+    ],
+
     "property_description": [
-        "Property Description", "Description of Property", "Schedule of Property", "Details of Property",
-        "Schedule A", "Schedule A Property", "Schedule 'A'", "Schedule-A", "Schedule B", "Schedule 'B'", "Schedule-B",
-        "Schedule of the Property", "Schedule Property", "Schedule",
-        'SCHEDULE"A"', 'SCHEDULE"A" PROPERTY', 'SCHEDULE"B"', 'SCHEDULE"B" PROPERTY', 'SCHEDULE OF THE PROPERTY', 'SCHEDULE OF PROPERTY'
+        "Brief Description of Property", "Description of Property",
+        "Property Description", "Brief Description",
+        "Property Details", "Asset Description",
+        "Description of the Property", "Schedule of Property",
+        "Schedule Property", "Property Particulars",
+        "Nature of Property", "Type of Property",
+        "Sampatti Ka Vivaran", "Description",
+        "Proprty Description", "Descripton of Property",
+        # AOS-specific
+        "Open Plot", "Open Land Municipal Premises",
+        "All that the", "All that the Open Land",
+        "Semi-Finished Flat", "Residential Apartment",
+        "Residential Complex",
     ],
-    # Section 1 - General
-    "valuation_purpose": ["Valuation Purpose", "Purpose of Valuation", "Purpose"],
-    "inspection_date": ["Inspection Date", "Date of Inspection", "Inspection date/time"],
-    "valuation_date": ["Valuation Date", "Date of Valuation", "Valuation date/time"],
-    # Section 3 - Documents
-    "aos_buyer_name": ["In favour of", "Vendee", "Second Part", "Purchaser", "Buyer Name", "Name of Purchaser", "Name of Buyer"],
-    "aos_seller_name": ["By and Between", "First Part", "Vendor", "Seller Name", "Name of Seller"],
-    "aos_sale_deed_doc_number": ["Sale Deed Number", "Sale Deed Doc No", "Sale Deed Doc Number", "DAGPA Document Number", "Doc No", "Document Number"],
-    "aos_property_schedule": ["Schedule of the property", "Property Schedule", "Schedule of Property"],
-    "wo_party_name": ["Placed On", "Contractor Name", "Contractor", "Agency Name", "Party Name"],
-    "rera_registration_number": ["RERA Registration Number", "Rera No", "RERA Registration No", "Rera Registration"],
-    # Section 4 - Ownership
-    "purchaser_name": ["Purchaser Name", "Name of Purchaser", "Buyer Name", "Name of Buyer", "Second Part", "Purchaser", "Buyer", "Purchaser(s)", "Buyer(s)", "Vendee"],
-    "purchaser_address": ["Purchaser Address", "Buyer Address", "Address of Buyer"],
-    "purchaser_phone": ["Purchaser Phone", "Buyer Phone", "Mobile No", "Phone No", "Contact No"],
-    "ownership_type": ["Ownership Type", "Type of Ownership", "Ownership"],
-    # Section 5 - Property Description
-    "property_tenure": ["Property Tenure", "Tenure of Property", "Tenure"],
-    # Section 6 - Prohibited
-    "prohibited_property_details": ["Prohibited Details", "Prohibited Property Details", "Prohibited Transaction"],
-    # Section 7 - Legal
-    "legal_opinion": ["Legal Opinion", "Opinion"],
-    # Section 8 - Financial
-    "mortgage_details": ["Mortgage Details", "Mortgage", "Encumbrance Details"],
-    "ftl_buffer_zone_details": ["FTL Buffer Zone Details", "Buffer Zone Details", "FTL Details", "FTL Status"],
-    # Section 9 - Location
-    "ts_number": ["TS Number", "TS No.", "TS No", "T.S.No.", "T.S. No", "Town Survey Number"],
-    "ward": ["Ward", "Ward No", "Ward Number"],
-    "taluka": ["Taluka", "Tehsil", "Tahsil"],
-    "layout_approval_date": ["Layout Approval Date", "Approved Date", "Layout Date"],
-    "layout_approval_validity": ["Layout Approval Validity", "Validity", "Expiry Date"],
-    "approved_plan_authority": ["Approved Plan Authority", "Sanctioning Authority", "Authority"],
-    # Section 13 - Municipality
-    "municipality_type": ["Municipality Type", "Type of Municipality", "Municipality"],
-    # Section 14 - Govt Enactments
-    "under_govt_enactment": ["Under Govt Enactment", "Govt Enactment"],
-    "enactment_details": ["Enactment Details"],
-    # Extras
-    "state": ["State"],
-    "pincode": ["Pincode", "Pin Code", "Pin"],
-    "project_name": ["Project Name", "Name of Project"],
-    "registration_number": ["Registration Number", "Registration No"],
-    "registration_date": ["Registration Date"],
-    "agreement_value": ["Agreement Value", "Sale Consideration", "Value"]
+
+    "schedule_of_property": [
+        "Schedule of Property", "Schedule A Property",
+        "Schedule B Property", "Schedule 'A'", "Schedule 'B'",
+        "Schedule A", "Schedule B", "Property Schedule",
+        "Schedule of the Property", "Anusoochi",
+        "Schedule-A", "Schedule-B",
+        # AOS-specific
+        "SCHEDULE \"A\" PROPERTY", "SCHEDULE \"B\" PROPERTY",
+        "Schedule A Property", "Schedule B Property",
+        "SCHEDULE OF THE FLAT HEREBY SOLD",
+        "Schedule of the Flat Hereby Sold",
+        "SCHEDULE OF THE PROPERTY",
+        "the Schedule", "Schedule Property",
+    ],
+
+    # ─── BOUNDARIES ───────────────────────────────────────────────────────────
+    "boundaries_north": [
+        "North", "North Boundary", "Bounded on North",
+        "Northern Boundary", "N", "NORTH",
+        "North Side", "North Direction",
+        "As Per Deed (North)", "As Per Actuals (North)",
+        "Uttar", "Uttari Seema", "Nroth", "Norht",
+        "NORTH :", "NORTH:", "North :",
+        # AOS-specific
+        "Gayam Motor Works Pvt Ltd",  # the value, often parsed with key
+        "Corridor.",  # flat north boundary value
+    ],
+
+    "boundaries_south": [
+        "South", "South Boundary", "Bounded on South",
+        "Southern Boundary", "S", "SOUTH",
+        "South Side", "South Direction",
+        "As Per Deed (South)", "As Per Actuals (South)",
+        "Dakshin", "Dakshini Seema", "Soth", "Souht",
+        "SOUTH :", "SOUTH:", "South :",
+        # AOS-specific
+        "Limitless Synergy Pvt Ltd",  # south boundary value
+        "Open To Sky.",  # flat south boundary value
+    ],
+
+    "boundaries_east": [
+        "East", "East Boundary", "Bounded on East",
+        "Eastern Boundary", "E", "EAST",
+        "East Side", "East Direction",
+        "As Per Deed (East)", "As Per Actuals (East)",
+        "Purv", "Purvi Seema", "Esst", "Eatst",
+        "EAST :", "EAST:", "East :",
+        # AOS-specific
+        "30 Feet Wide Road",  # east boundary value (open plot)
+        "Corridor & Staircase",  # east boundary value (flat)
+    ],
+
+    "boundaries_west": [
+        "West", "West Boundary", "Bounded on West",
+        "Western Boundary", "W", "WEST",
+        "West Side", "West Direction",
+        "As Per Deed (West)", "As Per Actuals (West)",
+        "Paschim", "Pashchimi Seema", "Wets", "Weest",
+        "WEST :", "WEST:", "West :",
+        # AOS-specific
+        "Sy No. 83 & 84", "Sy No 83 & 84",  # west boundary value
+        "Duct & Lift",  # flat west boundary value
+    ],
+
+    "north_boundary": [
+        "North", "North Boundary", "Northern Boundary",
+        "N. Boundary", "Bounded North", "North Side",
+        "North:", "NORTH:", "Uttar Seema",
+        "NORTH : ", "NORTH :",
+    ],
+
+    "south_boundary": [
+        "South", "South Boundary", "Southern Boundary",
+        "S. Boundary", "Bounded South", "South Side",
+        "South:", "SOUTH:", "Dakshin Seema",
+        "SOUTH : ", "SOUTH :",
+    ],
+
+    "east_boundary": [
+        "East", "East Boundary", "Eastern Boundary",
+        "E. Boundary", "Bounded East", "East Side",
+        "East:", "EAST:", "Purv Seema",
+        "EAST : ", "EAST :",
+    ],
+
+    "west_boundary": [
+        "West", "West Boundary", "Western Boundary",
+        "W. Boundary", "Bounded West", "West Side",
+        "West:", "WEST:", "Paschim Seema",
+        "WEST : ", "WEST :",
+    ],
+
+    "boundaries_as_per_deed": [
+        "As Per Deed", "As Per Sale Deed", "As Per Document",
+        "Document Boundaries", "Deed Boundaries",
+        "As Per Records", "As Per Title",
+        "and bounded as follows", "bounded as follows:",
+        "bounded as follows:-", "and bounded as follows:",
+    ],
+
+    "boundaries_as_per_actuals": [
+        "As Per Actuals", "Actual Boundaries", "Physical Boundaries",
+        "On Ground", "As Measured", "As Per Site",
+        "As Per Inspection", "Physical Verification",
+        "As per Actual", "As per actual measurement",
+    ],
+
+    # ─── DATES ────────────────────────────────────────────────────────────────
+    "agreement_date": [
+        "Agreement Date", "Date of Agreement", "Date of Execution",
+        "Execution Date", "Date of This Agreement",
+        "Agreement Dated", "Date:", "Dated:",
+        "Made on", "Executed on", "Entered into on",
+        # AOS-specific
+        "made and executed on this", "executed on",
+        "on this 17th day of Feb 2026",
+        "on this", "Date: 17-02-2026", "Date: 17/02/2026",
+        "FEB-17-2026", "17-02-2026", "17/02/2026",
+        "Agreement dated:", "Agreement dated",
+    ],
+
+    "inspection_date": [
+        "Date of Inspection", "Inspection Date", "Date of Site Visit",
+        "Site Visit Date", "Date of Survey", "Survey Date",
+        "Date of Physical Verification", "Visited On",
+        "Inspection Dt", "Dt of Inspection",
+        "Date of Field Visit", "Visited Date",
+        "Nirikshan Tithi", "Date of Inspection:",
+        "Dat of Inspection", "Date Of Inspecton",
+    ],
+
+    "valuation_date": [
+        "Date of Valuation", "Valuation Date", "Date of Report",
+        "Report Date", "As on Date", "Valued On",
+        "Dt of Valuation", "Valuation Dt",
+        "Date of Assessment", "Assessment Date",
+        "Mulyankan Tithi", "Date of Valuation:",
+        "Date of Valuaton", "Dat of Valuation",
+    ],
+
+    "registration_date": [
+        "Registration Date", "Date of Registration",
+        "Registered On", "Reg Date", "Date of Reg",
+        "Date Registered", "Doc Date",
+        # AOS-specific
+        "dated", "Dated:", "Dated :", "dated 14-03-2023",
+        "dated: 14.03.2023", "registered at", "Registered at",
+    ],
+
+    "sale_deed_date": [
+        "Sale Deed Date", "Date of Sale Deed",
+        "Date of Purchase", "Purchase Date",
+        "Date of Acquisition", "Acquired On",
+        # AOS-specific
+        "vide document no.", "vide document no",
+        "dated 14-03-2023", "dated: 14.03.2023",
+    ],
+
+    "possession_date": [
+        "Date of Possession", "Possession Date",
+        "Handover Date", "Date of Handover",
+        "Date of Delivery", "Delivery Date",
+        # AOS-specific
+        "within 1 to 6 months", "within 1 to 6 months of",
+        "handed over within", "Flat will be handed over",
+    ],
+
+    "work_order_date": [
+        "Work Order Date", "Date of Work Order",
+        "WO Date", "Work Order Dated",
+        "Work Order Agreement Date",
+        "made and executed on 17/02/2026",
+        "in terms of Work Order dated",
+        "Work Order dated:", "WO dated",
+    ],
+
+    # ─── AREAS ────────────────────────────────────────────────────────────────
+    "built_up_area": [
+        "Built Up Area", "Built-Up Area", "Builtup Area",
+        "BUA", "Build Up Area", "Built Area",
+        "Plinth Area", "Floor Area", "Carpet Area",
+        "Super Built Up Area", "Super BUA", "Covered Area",
+        "Total Built Up Area", "Total BUA",
+        "Construction Area", "Constructed Area",
+        "sq ft", "sq. ft", "sq feet", "sqft",
+        "Sq Feet", "Sq.Ft", "Square Feet",
+        "Nirman Kshetrafal", "Nirman Area",
+        "Bult Up Area", "Buit Up Area", "Bulit Up Area",
+        # AOS-specific
+        "admeasuring 1130 sq. feet", "1130 sq. feet",
+        "admeasuring", "sq. feet of built up area",
+        "built up area (including common areas, balconies)",
+        "including common areas, balconies",
+        "sq feet of built up area",
+        "admeasuring 1130", "1130 sq ft",
+    ],
+
+    "land_area": [
+        "Land Area", "Plot Area", "Site Area",
+        "Total Land Area", "Extent of Land",
+        "Land Extent", "Total Extent", "Admeasuring",
+        "Measuring Area", "Land Admeasuring",
+        "Plot Size", "Site Size", "Land Size",
+        "Total Area", "Open Plot Area",
+        "sq yards", "sq. yards", "sqyards",
+        "Sq Yards", "Square Yards",
+        "sq mtrs", "sq. mtrs", "sqmtrs",
+        "Sq Meters", "Square Meters",
+        "Acres", "Guntas", "Cents",
+        "Bhumi Kshetrafal", "Zameen Ka Rukba",
+        "Lnd Area", "Lad Area",
+        # AOS-specific
+        "790 sq. yards", "790 Square yards",
+        "admeasuring area 790 sq. yards",
+        "660.44 Sq Mtrs", "660.44 Sq. Mtrs",
+        "total extent of admeasuring 790",
+        "out of total extent of admeasuring",
+        "total extent", "Extent",
+    ],
+
+    "undivided_share_of_land": [
+        "Undivided Share of Land", "UDS", "UDS of Land",
+        "Undivided Share", "UDS Area", "Land UDS",
+        "Share of Land", "Proportionate Share",
+        "Proportionate Land Share", "Common Land Share",
+        "Apairth Bhoomi Hissa", "UDS in Sq Yards",
+        "UDS in Sq Mtrs",
+        # AOS-specific
+        "undivided share of land admeasuring",
+        "undivided share of land admeasuring 42.61 sq. yards",
+        "42.61 sq. yards", "42.61 sq yards",
+        "equivalent to 35.627 Sq. meters",
+        "35.627 Sq. meters", "35.627 Sq Mtrs",
+        "undivided share of land",
+        "along with an undivided share of land",
+    ],
+
+    "carpet_area": [
+        "Carpet Area", "Net Floor Area", "Net Area",
+        "Usable Area", "Living Area",
+        "Galicha Kshetrafal",
+    ],
+
+    "plinth_area": [
+        "Plinth Area", "PA", "Ground Coverage",
+        "Footprint Area", "Floor Plate",
+    ],
+
+    "super_built_up_area": [
+        "Super Built Up Area", "Super BUA", "SBUA",
+        "Gross Area", "Total Floor Area",
+        "Including Common Areas", "Including Common Areas and Balconies",
+        # AOS-specific
+        "including common areas, balconies",
+        "sq. feet of built up area (including common areas, balconies)",
+    ],
+
+    "parking": [
+        "Parking", "Car Parking", "No of Parking",
+        "Parking Space", "Covered Parking",
+        "Open Parking", "Stilt Parking",
+        "One Car Parking", "Two Car Parking",
+        "Parking Slots", "Garage",
+        # AOS-specific
+        "One Car Parking", "1 Car Parking",
+        "and One Car Parking",
+        "Stilt / Parking", "Stilt Parking",
+    ],
+
+    # ─── FINANCIAL ────────────────────────────────────────────────────────────
+    "total_sale_consideration": [
+        "Total Sale Consideration", "Sale Consideration",
+        "Total Consideration", "Sale Price",
+        "Total Sale Price", "Purchase Price",
+        "Total Purchase Price", "Agreement Value",
+        "Contract Value", "Deal Amount",
+        "Total Amount", "Property Value",
+        "Vikray Mulya", "Keemat",
+        "Ttal Sale Consideration", "Sale Consiedration",
+        # AOS-specific
+        "total sale consideration of Rs.",
+        "Rs. 28,25,000/-", "28,25,000/-",
+        "Rupees Twenty-Eight Lakh Twenty-Five Only",
+        "Rs.28,25,000/-",
+        "total sale consideration",
+        "for a total sale consideration of",
+    ],
+
+    "advance_amount": [
+        "Advance Amount", "Advance", "Token Amount",
+        "Booking Amount", "Earnest Money",
+        "Earnest Money Deposit", "EMD",
+        "Initial Payment", "Upfront Payment",
+        "Advance Payment", "Part Payment",
+        "Advance Paid", "Amount Paid",
+        "Peshgi", "Bayana", "Advance Sum",
+        # AOS-specific
+        "Rs. 2,82,500/-", "2,82,500/-",
+        "Rupees Two Lakh Eighty-Two Thousand Five Hundred",
+        "advance by way of online Transfer",
+        "paid a sum of", "sum of Rs.",
+        "Towards advance", "towards advance",
+        "advance as part sale consideration",
+    ],
+
+    "balance_amount": [
+        "Balance Amount", "Balance Sale Consideration",
+        "Remaining Amount", "Balance Payment",
+        "Balance Due", "Outstanding Amount",
+        "Remaining Balance", "Balance to be Paid",
+        "Due Amount", "Pending Amount",
+        "Shesh Rakam", "Baaki Rakam",
+        # AOS-specific
+        "Rs. 25,42,500/-", "25,42,500/-",
+        "Rupees Twenty-Five Lakh Forty-Two Thousand Five Hundred Only",
+        "remaining balance of Rs.",
+        "balance sale consideration",
+        "subjected to Loan", "will be subjected to Loan",
+    ],
+
+    "loan_amount": [
+        "Loan Amount", "Loan", "Mortgage Amount",
+        "Home Loan Amount", "Finance Amount",
+        "Bank Loan", "Term Loan", "Housing Loan",
+        "Credit Amount", "Financed Amount",
+        "HL Amount", "Loan Sanctioned",
+        "Rin Rakam", "Karz",
+        # AOS-specific
+        "loan amount from FI/Bank",
+        "The loan amount from FI/Bank",
+        "Loan", "subjected to Loan",
+        "loan will be directly released",
+        "balance amount in favor of",
+    ],
+
+    "market_value": [
+        "Market Value", "Fair Market Value", "FMV",
+        "Current Market Value", "Present Market Value",
+        "Market Rate", "Market Price",
+        "Realizable Value", "Prevailing Market Value",
+        "Value as per Market", "Open Market Value",
+        "Estimated Market Value", "MV",
+        "Bazaar Mulya", "Bajar Mulya",
+        "Mkt Value", "Markt Value",
+    ],
+
+    "distress_value": [
+        "Distress Value", "Forced Sale Value", "FSV",
+        "Liquidation Value", "Auction Value",
+        "Forced Liquidation Value", "FLV",
+        "Minimum Realizable Value",
+        "Vikray Mulya (Vivastha)", "FSV Value",
+        "Distress Val", "Distres Value",
+    ],
+
+    "guideline_value": [
+        "Guideline Value", "Government Value", "Govt Value",
+        "Ready Reckoner Rate", "Circle Rate",
+        "Stamp Duty Value", "Registration Value",
+        "Sub-Registrar Value", "SRO Value",
+        "Collector's Rate", "Guidance Value",
+        "Basic Value", "Standard Value",
+        "DC Rate", "Collector Rate",
+        "Sarkari Mulya", "Sarkaari Dar",
+        "Guidline Value", "Guideline Val",
+    ],
+
+    "work_order_value": [
+        "Work Order Value", "Work Order Amount",
+        "Total Work Value", "Contract Amount",
+        "Construction Cost", "Work Value",
+        "Total", "Total Amount",
+        "TOTAL", "Total Value",
+        # AOS/WO-specific
+        "Rs. 28,25,000/-", "28,25,000/-",
+        "Rupees Twenty-Eight Lakh Twenty-Five Thousand Only",
+        "above works to the tune of Rs.",
+        "tune of Rs.", "VALUE", "Item Value",
+        "3,00,000", "3,50,000",  # individual work order line values
+    ],
+
+    "stamp_duty_value": [
+        "Stamp Duty Value", "Stamp Duty",
+        "Stamp Duty Paid", "Registration Charges",
+        "Stamp Duty & Registration", "SD Value",
+        # AOS-specific (stamp paper)
+        "₹ 0000200/-", "0000200/-",
+        "ZERO ZERO ZERO ZERO TWO ZERO ZERO",
+        "Stamp Paper Value", "Non-Judicial Stamp",
+        "India Non Judicial", "STATE BANK OF INDIA",
+    ],
+
+    # ─── LEGAL / DOCUMENT DETAILS ─────────────────────────────────────────────
+    "document_no": [
+        "Document No", "Document Number", "Doc No",
+        "Doc. No", "Doc Number", "Registration No",
+        "Registration Number", "Reg No", "Reg. No",
+        "Deed No", "Sale Deed No", "Agreement No",
+        "Document Bearing No", "Document No.",
+        "Dastavez Sankhya",
+        # AOS-specific
+        "document bearing No.7085 of 2024",
+        "document bearing No.8610 of 2023",
+        "No. 8610 of 2023", "No. 7085 of 2024",
+        "document no. 8610-2023", "vide document no.",
+        "document bearing No", "document no",
+        "File No.", "File No",
+        "3816242", "48/2023",
+    ],
+
+    "book_no": [
+        "Book No", "Book Number", "Book-I", "Book 1",
+        "Book-II", "Book 2", "Book No.",
+        "Register Book", "Volume No",
+        # AOS-specific
+        "Book-1", "Book-I", "Book 1",
+        "Book-1, and Dated:", "Book-I,",
+    ],
+
+    "registered_at": [
+        "Registered At", "Registered At RO",
+        "Registration Office", "Sub Registrar Office",
+        "SRO", "Registrar Office", "R.O.",
+        "Office of Sub-Registrar", "Panjiyan Karyalay",
+        # AOS-specific
+        "registered at R.O Sangareddy",
+        "registered at RO Sanga Reddy",
+        "registered at RO Sangareddy",
+        "R.O Sangareddy", "R.O. Sangareddy",
+        "RO Sangareddy", "Sanga Reddy R.O.",
+    ],
+
+    "sale_deed_no": [
+        "Sale Deed No", "Sale Deed Number", "Deed No",
+        "Deed Number", "Sale Deed Document No",
+        "Document No of Sale Deed",
+        "Vikray Patra Sankhya",
+        # AOS-specific
+        "8610 of 2023", "No. 8610 of 2023",
+        "vide document bearing No. 8610 of 2023",
+        "Sale Deed vide document no. 8610-2023",
+        "registered Sale Deed vide document no.",
+    ],
+
+    "development_agreement": [
+        "Development Agreement", "DA",
+        "Development Agreement cum GPA",
+        "Joint Development Agreement", "JDA",
+        "Development Agreement No", "DA No",
+        # AOS-specific
+        "Development Agreement cum General Power of Attorney",
+        "DA cum GPA", "vide registered Development Agreement",
+        "document bearing No.7085 of 2024",
+        "7085 of 2024", "DA-GPA",
+        "Development Agreement cum General Power of Attorney document bearing No.",
+    ],
+
+    "building_permission": [
+        "Building Permission", "Building Plan Approval",
+        "Construction Permission", "BP No",
+        "Building Permit No", "Plan No",
+        "Permit No", "Permission No",
+        "File No", "GHMC File No",
+        "BP File No", "Permit Number",
+        # AOS-specific
+        "File No. 012383/GHMC/6103/SLP2/2023-BP",
+        "012383/GHMC/6103/SLP2/2023-BP",
+        "permit No. 5741/GHMC/SLP/2024-BP",
+        "5741/GHMC/SLP/2024-BP",
+        "dt. 04-03-2024",
+        "building permission from the Greater Hyderabad Municipal Corporation",
+        "obtained building permission",
+        "GHMC building permission",
+    ],
+
+    "layout_approval": [
+        "Layout Approval", "Approved Layout",
+        "Layout Plan Approval", "LP No",
+        "Layout Permission", "Planning Permission",
+        "Date of Issue and Validity of Layout of Approved Map / Plan",
+        "Approved Map / Plan",
+        "Layout Approval No", "Approved Plan",
+        "mutually agreed plan", "as per the mutually agreed plan",
+    ],
+
+    "layout_approving_authority": [
+        "Approved Map / Plan Issuing Authority",
+        "Layout Issuing Authority",
+        "Plan Sanctioning Authority",
+        "Sanctioned By", "Approved By",
+        "GHMC", "HMDA", "DTCP", "BDA", "CMDA",
+        "Municipality", "Gram Panchayat",
+        "Planning Authority", "Development Authority",
+        # AOS-specific
+        "Greater Hyderabad Municipal Corporation",
+        "GHMC Ramachandrapuram",
+        "obtained construction permission from GHMC Ramachandrapuram",
+    ],
+
+    "mortgage_details": [
+        "Mortgage Details", "Mortgage", "Mortgage Information",
+        "Encumbrance Details", "Encumbrances",
+        "Charge Details", "Lien Details",
+        "Hypothecation Details", "Pledge Details",
+        "Mortgage Status", "Existing Mortgage",
+        "Bandhan Vivaran", "Bhaar Vivaran",
+        "Mortgge Details", "Mortgage Detials",
+        # AOS-specific
+        "not subject to any attachments",
+        "not done anything whereby the said property may be subject to",
+        "litigations, mortgages, tenancy claims",
+        "dues or lien of any court",
+        "legal embargo", "legal impediment",
+        "Nil Encumbrance", "free from encumbrance",
+    ],
+
+    "legal_opinion": [
+        "Legal Opinion", "Legal Report", "Advocate Opinion",
+        "Lawyer Opinion", "Title Opinion", "Title Certificate",
+        "Title Report", "Legal Clearance", "Legal Status",
+        "Legal Scrutiny", "Legal Verification",
+        "Advocate's Opinion", "Title Search Report",
+        "Legal Opinion Certificate", "Vidhik Raay",
+        "Legl Opinion", "Legel Opinion",
+        # AOS-specific
+        "not entered into any prior agreement for sale",
+        "no agreement of sale at present",
+        "neither any legal embargo",
+        "no legal impediment",
+        "title to the said property",
+        "perfect title",
+    ],
+
+    "encumbrance_certificate": [
+        "Encumbrance Certificate", "EC",
+        "Encumbrance Certificate Details",
+        "EC Details", "EC Period",
+        "Nil Encumbrance", "Clear EC",
+        "Bhaar Praman Patra",
+    ],
+
+    "patta_details": [
+        "Patta Details", "Patta No", "Patta Number",
+        "Patta", "Revenue Record", "Pahani",
+        "Adangal", "RoR", "Record of Rights",
+        "Land Records", "Revenue Extract",
+    ],
+
+    "prohibited_properties_details": [
+        "Prohibited Properties Details", "Prohibited Property",
+        "Prohibited Details", "Schedule Tribe Land",
+        "Agency Area", "Inam Land", "Endowment Land",
+        "Government Land", "Wakf Land", "Forest Land",
+        "CRZ Area", "Notified Area", "Embargo",
+        "Prohibited Transaction", "Transfer Prohibition",
+        # AOS-specific
+        "Schedule of Property is not subject matter of any kind of prohibition",
+        "not subject matter of any kind of prohibition",
+        "prohibition of Transfer of properties",
+        "Act 9 of 1977", "prohibition",
+    ],
+
+    # ─── PROPERTY CHARACTERISTICS ─────────────────────────────────────────────
+    "property_type": [
+        "Property Type", "Type of Property", "Nature of Property",
+        "Asset Type", "Property Category",
+        "Residential", "Commercial", "Industrial",
+        "Agricultural", "Mixed Use", "Open Plot",
+        "Flat", "Apartment", "House", "Villa",
+        "Independent House", "Row House", "Bungalow",
+        "Shop", "Office", "Warehouse", "Factory",
+        "Sampatti Ka Prakar",
+        "Prperty Type", "Properrty Type",
+        # AOS-specific
+        "Semi-Finished Flat", "Residential Apartment",
+        "Residential Complex", "Open Land",
+        "Open Plot in Municipal Premises",
+    ],
+
+    "occupancy_status": [
+        "Occupancy Status", "Occupation Status",
+        "Occupancy", "Occupied By", "Occupied Status",
+        "Possession Status", "Tenant Status",
+        "Self Occupied", "Rented", "Vacant",
+        "Owner Occupied", "Tenant Occupied",
+        "Status of Occupancy", "Use Status",
+        "Adhikaar Sthiti", "Qabza Sthiti",
+        "Occupncy Status", "Ocupancy Status",
+        # AOS-specific
+        "vacant and peaceful physical possession",
+        "peaceful physical possession",
+        "Possession", "Semi-Finished",
+    ],
+
+    "age_of_property": [
+        "Age of Property", "Age of Building",
+        "Age of Structure", "Age of Construction",
+        "Year of Construction", "Year Built",
+        "Construction Year", "Built Year",
+        "Age (Years)", "Building Age",
+        "Remaining Life", "Expected Life",
+        "Useful Life", "Life of Building",
+        "Sampatti Ki Aayu", "Bhavan Ki Aayu",
+        "Age of Proprty", "Age Of Buildng",
+    ],
+
+    "construction_type": [
+        "Construction Type", "Type of Construction",
+        "Structure Type", "Building Type",
+        "RCC", "Load Bearing", "Steel Structure",
+        "Framed Structure", "Composite",
+        "Kutcha", "Pucca", "Semi-Pucca",
+        "Construction Quality", "Quality of Construction",
+        "Nirman Prakar",
+        # AOS-specific
+        "Residential Apartment Stilt / Parking + Upper 5 Floors",
+        "construction of residential Apartment",
+        "for constructing Residential Complex",
+    ],
+
+    "no_of_floors": [
+        "No of Floors", "Number of Floors",
+        "Total Floors", "No. of Floors",
+        "G+", "Stilt + Upper Floors",
+        "Floors", "No of Storeys",
+        "Number of Storeys", "Total Storeys",
+        # AOS-specific
+        "Stilt / Parking + Upper 5 Floors",
+        "Upper 5 Floors", "5 Floors",
+        "G+5", "Stilt+5", "5th Floor",
+    ],
+
+    "road_width": [
+        "Road Width", "Width of Road", "Road Facing",
+        "Road Access", "Approach Road",
+        "Road Size", "Road Frontage",
+        "Feet Wide Road", "Meter Wide Road",
+        "30 Feet Wide Road", "40 Feet Wide Road",
+        # AOS-specific
+        "30 Feet Wide Road",  # east boundary value
+        "30 Feet Wide", "30ft Road",
+    ],
+
+    # ─── VALUATION SPECIFICS ──────────────────────────────────────────────────
+    "purpose_of_valuation": [
+        "Purpose for which the valuation is made",
+        "Purpose of Valuation", "Purpose",
+        "Reason for Valuation", "Valuation Purpose",
+        "Object of Valuation", "Valuation For",
+        "Loan Purpose", "Mortgage Purpose",
+        "Mulyankan Ka Uddeshya",
+        "Purpse of Valuation", "Purpose of Valuaton",
+        # AOS/WO-specific
+        "Home Loan", "Housing Loan",
+        "Bank Loan Purpose", "SBI Loan",
+    ],
+
+    "list_of_documents": [
+        "List of Documents", "Documents Produced",
+        "Documents Submitted", "List of Documents Produced for Perusal",
+        "Documents Verified", "Documents for Perusal",
+        "Title Documents", "Property Documents",
+        "Supporting Documents", "Documents Furnished",
+        "Dastavej Soochi",
+        # AOS-specific
+        "requisite documents", "all the requisite documents",
+        "requisite formalities and certificates",
+    ],
+
+    "rate_per_sqft": [
+        "Rate per Sq Ft", "Rate / Sq Ft",
+        "Rate Per Square Feet", "Per Sqft Rate",
+        "Market Rate per Sqft", "Prevailing Rate",
+        "Rate", "Unit Rate",
+        "Dar Pratishath Varg Feet",
+    ],
+
+    "rate_per_sqyard": [
+        "Rate per Sq Yard", "Rate / Sq Yard",
+        "Rate Per Square Yard", "Per Sqyard Rate",
+        "Land Rate", "Plot Rate",
+        "Rate per Sqyd",
+    ],
+
+    # ─── WORK ORDER SPECIFICS ─────────────────────────────────────────────────
+    "item_description": [
+        "Item", "Item Description", "Work Item",
+        "Description of Work", "Particulars",
+        "Nature of Work", "Scope of Work",
+        "ITEM", "Work Description",
+        # WO-specific
+        "S.No. ITEM VALUE", "Sl.No", "ITEM",
+        "item wise", "item-wise",
+    ],
+
+    "item_value": [
+        "Value", "Amount", "Cost",
+        "Item Value", "Item Cost", "Work Cost",
+        "Rate", "Total Value", "VALUE",
+        "Item Amount",
+        # WO-specific
+        "3,00,000", "3,50,000", "2,50,000",
+        "1,50,000", "2,25,000", "1,00,000",
+        "2,00,000",
+    ],
+
+    "serial_no": [
+        "S.No.", "S.No", "Sr. No", "Serial No",
+        "Serial Number", "Sl No", "Sl. No",
+        "No.", "No", "Item No", "S No",
+        # WO-specific
+        "S.No. (table column)", "1", "2", "3",
+    ],
+
+    "flooring": [
+        "Flooring", "Floor Work", "Floor Finishing",
+        "Tiles", "Marble", "Granite Flooring",
+        "Floor Type",
+        "Flooring - 3,00,000",
+    ],
+
+    "wall_finishing": [
+        "Internal & External Wall Finishing in Lappam",
+        "Wall Finishing", "Wall Plastering",
+        "Internal Finishing", "External Finishing",
+        "Lappam Finishing", "Wall Work",
+        "Internal & External Wall Finishing",
+        "Lappam", "Wall Finishing in Lappam",
+    ],
+
+    "painting": [
+        "Painting", "Paint Work", "Interior Painting",
+        "Exterior Painting", "Paint",
+        "Painting - 3,50,000",
+    ],
+
+    "doors_windows": [
+        "Doors/windows Shutters in Best Teak Wood",
+        "Doors and Windows", "Doors / Windows",
+        "Door Work", "Window Work", "Shutters",
+        "Teak Wood Doors",
+        "Doors/windows Shutters",
+        "Best Teak Wood Doors",
+    ],
+
+    "kitchen_shelves": [
+        "Kitchen and Bed Rooms Selves",
+        "Kitchen Shelves", "Bedroom Shelves",
+        "Shelves", "Cupboards", "Wardrobes",
+        "Kitchen and Bed Rooms Shelves",
+        "Kitchen Selves", "Bed Rooms Selves",
+    ],
+
+    "kitchen_platform": [
+        "Kitchen Platform", "Kitchen Counter",
+        "Kitchen Work", "Modular Kitchen",
+        "Kitchen Platform - 1,50,000",
+    ],
+
+    "pop_ceiling": [
+        "POP Ceiling with light fittings",
+        "POP Ceiling", "False Ceiling",
+        "Ceiling Work", "Gypsum Ceiling",
+        "POP Ceiling with light fittings",
+        "Light Fittings", "POP with light",
+    ],
+
+    "upvc_windows": [
+        "UPVC Windows and Sliding Doors",
+        "UPVC Windows", "UPVC", "Sliding Doors",
+        "Aluminum Windows", "Window Frames",
+        "UPVC Windows and Sliding Doors - 2,25,000",
+    ],
+
+    "electrical_works": [
+        "Electrical Works", "Electrical Work",
+        "Wiring", "Electrical Fitting",
+        "Electrical Installation", "Electrification",
+        "Electrical Works - 2,50,000",
+    ],
+
+    "electrical_piping": [
+        "Electrical Piping & Wring",
+        "Electrical Piping & Wiring",
+        "Electrical Piping", "Piping",
+        "Conduit Work", "Electrical Conduit",
+        "Electrical Piping & Wring - 1,00,000",
+    ],
+
+    "sanitary_fittings": [
+        "Quality sanitary fittings",
+        "Sanitary Fittings", "Plumbing",
+        "Sanitary Work", "Plumbing Work",
+        "Sanitation", "Water Fittings",
+        "Quality Sanitary Fittings",
+        "Sanitary - 2,00,000",
+    ],
+
+    "pooja_room": [
+        "Pooja Room Area", "Pooja Room",
+        "Prayer Room", "Puja Ghar",
+        "Pooja Room Area - 1,00,000",
+    ],
+
+    "bathroom_fittings": [
+        "Bathroom Fittings", "Bath Fittings",
+        "WC Fittings", "Toilet Fittings",
+        "Bathroom Accessories",
+        "Bathroom Fittings - 1,00,000",
+    ],
+
+    # ─── BANK / LOAN DETAILS ─────────────────────────────────────────────────
+    "bank_name": [
+        "Bank Name", "Name of Bank", "Lender Name",
+        "Financial Institution", "FI Name",
+        "Housing Finance Company", "HFC",
+        "NBFC Name", "Lending Institution",
+        "Bank / FI", "State Bank of India", "SBI",
+        # AOS/WO-specific
+        "The Manager, State Bank of India, Hyderabad",
+        "State Bank of India, Hyderabad",
+        "SBI Hyderabad", "FI/Bank",
+        "loan amount from FI/Bank",
+        "To The Manager, State Bank of India",
+    ],
+
+    "branch_name": [
+        "Branch Name", "Branch", "Bank Branch",
+        "Branch Office", "Branch Location",
+        "Branch Code",
+        # AOS/WO-specific
+        "State Bank of India, Hyderabad",
+        "Hyderabad Branch",
+    ],
+
+    "loan_account_no": [
+        "Loan Account No", "Loan No",
+        "Account Number", "Loan Account Number",
+        "Reference No", "File No",
+        "Application No", "Case No",
+    ],
+
+    "valuer_name": [
+        "Valuer Name", "Name of Valuer",
+        "Empanelled Valuer", "Registered Valuer",
+        "Approved Valuer", "Panel Valuer",
+        "Valuation Officer", "Valuer",
+    ],
+
+    "report_no": [
+        "Report No", "Report Number", "Valuation Report No",
+        "Reference No", "File Reference",
+        "Case Reference", "Job No",
+    ],
+
+    # ─── LOCATION ─────────────────────────────────────────────────────────────
+    "state": [
+        "State", "State Name", "Province",
+        "Telangana", "Andhra Pradesh", "Karnataka",
+        "Rajya", "Prantheeya",
+        "Telangana State", "T.S.",
+        "Telangana State.", "TS",
+    ],
+
+    "pin_code": [
+        "PIN Code", "Pin Code", "Postal Code",
+        "ZIP Code", "PIN", "Pincode",
+        "Area Code", "Postal PIN",
+        # AOS-specific
+        "500089", "502305", "502319", "507209",
+    ],
+
+    "locality": [
+        "Locality", "Area", "Neighborhood",
+        "Colony", "Nagar", "Extension",
+        "Layout", "Sector", "Phase",
+        "Mohalla", "Basti",
+        # AOS-specific
+        "Goutham Nagar Colony", "Narsingi",
+        "Puppalaguda", "Bandlaguda",
+        "BANDLAGUDA", "Bhanoor Village",
+        "Chinna Korukondi", "Kokapet Road",
+        "Srikirshna Goshala",
+    ],
+
+    "landmark": [
+        "Landmark", "Near", "Opposite to",
+        "Adjacent to", "Nearby Landmark",
+        # AOS-specific
+        "Srikirshna Goshala", "Kokapet Road",
+        "7Hills (Pws)",
+    ],
+
+    # ─── RECEIPT / PAYMENT ───────────────────────────────────────────────────
+    "receipt_no": [
+        "Receipt No", "Receipt Number",
+        "Payment Receipt", "Challan No",
+        "Transaction ID", "Transaction Reference",
+        "UTR No", "IMPS Ref No",
+        "RECEIPT", "Receipt",
+    ],
+
+    "payment_mode": [
+        "Payment Mode", "Mode of Payment",
+        "By Online Transfer", "NEFT", "RTGS",
+        "IMPS", "Cheque", "Cash", "DD",
+        "Online Transfer", "Net Banking",
+        # AOS-specific
+        "by way of online Transfer",
+        "by way of Online",
+        "online transfer", "Online Transfer",
+        "by way of online",
+    ],
+
+    "receipt_amount": [
+        "Receipt Amount", "Amount Received",
+        "Received Amount", "Amount Acknowledged",
+        "Sum Received", "Received a sum of",
+        # AOS-specific
+        "Received a sum of Rs. 2,82,500/-",
+        "Rs. 2,82,500/-", "2,82,500/-",
+        "Two Lakh Eighty-Two Thousand Five Hundred",
+    ],
+
+    # ─── NOC / AGREEMENT TYPES ───────────────────────────────────────────────
+    "no_objection_certificate": [
+        "No Objection Certificate", "NOC",
+        "No Objection", "NOC Letter",
+        "No Objection Letter", "Clearance Letter",
+        "Clearance Certificate", "Anaapatty Praman Patra",
+        # AOS-specific (page 6)
+        "No objection to getting the additional works",
+        "We have no objection",
+        "no objection to getting",
+        "no objection to releasing the balance amount",
+        "SUBJ: No objection",
+        "Subject: No objection",
+    ],
+
+    "agreement_of_sale": [
+        "Agreement of Sale", "AOS", "Sale Agreement",
+        "Agreement for Sale", "Sale Contract",
+        "Purchase Agreement",
+        # AOS-specific
+        "AGREEMENT OF SALE", "Agreement of Sale",
+        "THIS AGREEMENT OF SALE",
+        "Agreement for Sale Witnesseth",
+        "NOW THIS AGREEMENT FOR SALE WITNESSETH AS UNDER",
+    ],
+
+    "work_order": [
+        "Work Order", "WO", "Work Order Agreement",
+        "Construction Agreement", "Contractor Agreement",
+        "Work Contract",
+        # WO-specific
+        "WORK - ORDER", "WORK ORDER",
+        "This Work Order Agreement",
+        "Work Order Agreement is made and executed",
+        "Work Order dated",
+    ],
+
+    "title_flow": [
+        "Title Flow", "Chain of Title",
+        "Title History", "Ownership History",
+        "Title Documents Chain", "Title Verification",
+        "Title flow to be Verified",
+        # AOS-specific
+        "having purchased the same under registered Sale Deed",
+        "purchased the same under registered Sale Deed",
+        "vide document no. 8610-2023",
+        "Title to the said property",
+    ],
+
+    # ─── ADDITIONAL AOS/WO FIELDS ─────────────────────────────────────────────
+    "company_registration": [
+        "Company Registration", "Registered under the Company's Act",
+        "Company's Act 1956", "Act 1956",
+        "Registered Office", "Registration No (Company)",
+        "CIN", "Corporate ID",
+        "a company registered under the company's act 1956",
+        "company registered under",
+        "Registered Office at",
+    ],
+
+    "authorized_representative": [
+        "Authorised Signatory", "Authorized Signatory",
+        "Rep. by its Manager", "Manager",
+        "Representative", "Authorized Representative",
+        "For Limitless Synergy Pvt. Ltd",
+        "For M/s LIMITLESS SYNERGY PVT LTD",
+        "Sig. of the First Party", "Sig. of the Second Party",
+        "SIG. OF THE FIRST PARTY",
+        "SIG. OF THE SECOND PARTY(IES)",
+    ],
+
+    "stamp_paper_details": [
+        "Stamp Paper No", "Stamp Paper Details",
+        "Non-Judicial Stamp", "India Non Judicial",
+        "STATE BANK OF INDIA", "RACPC",
+        "Phone No:", "Sold To/Issued To:",
+        "For Whom/ID Proof:", "Agreement",
+        "Stamp Paper", "Non Judicial Stamp Paper",
+        "Stamp Value", "Franking",
+        "FEB-17-2026", "13+04:41",
+        "3816242177133348",  # barcode number
+        "48/2023",
+    ],
+
+    "party_role": [
+        "First Party", "Second Party", "FIRST PARTY", "SECOND PARTY",
+        "VENDOR", "VENDEE", "DEVELOPER",
+        "First Party / Land Owner / Vendor",
+        "FIRST PARTY / LAND OWNER / VENDOR",
+        "Second Party(ies)/Contractor(s)",
+        "SECOND PARTY(IES)/CONTRACTOR(S)",
+    ],
+
+    "third_party_contractor": [
+        "Third Party Contractor", "Third-Party Contractor",
+        "Third Party", "Contractor",
+        "Third Party Contractors",
+        "additional works through third-party contractors",
+        "getting the additional work done by the third-party contractors",
+        "separate agreements with third-party contractors",
+        "additional work by entering separate agreements",
+    ],
+
+    "additional_work": [
+        "Additional Work", "Additional Works",
+        "Additional Work Order", "Finishing Works",
+        "Balance Work", "Pending Work",
+        "getting the additional works",
+        "additional works through third-party contractors",
+        "additional work by entering separate agreements",
+    ],
+
+    "covenants": [
+        "Covenants", "Covenant", "Undertakings",
+        "Conditions", "Terms and Conditions",
+        "Terms", "Conditions of Sale",
+        "NOW THIS AGREEMENT FOR SALE WITNESSETH AS UNDER",
+        "Witnesseth", "WITNESSETH",
+        "Agrees and Undertakes",
+        "covenant, agrees and undertakes",
+    ],
+
+    "signatory_name": [
+        "Signature", "Sign", "Signed by",
+        "VENDOR (signature)", "VENDEE (signature)",
+        "Sig. of First Party", "Sig. of Second Party",
+        "For Limitless Synergy Pvt. Ltd",
+        "Authorised Signatory",
+        "V E N D O R", "V E N D E E",
+        "VENDOR.", "VENDEE.",
+    ],
+
+    "remarks": [
+        "Remarks", "Notes", "Observations",
+        "Comments", "Additional Remarks",
+        "Special Remarks", "Valuer Remarks",
+        "Inspector Remarks", "General Remarks",
+        "Tippani", "Aalochna",
+        # AOS-specific
+        "it is agreed by the both the parties",
+        "agreed by both the parties",
+        "and it is agreed",
+    ],
+
+    # ─── ADDITIONAL FIELDS (100+ target) ─────────────────────────────────────
+
+    "total_plot_extent": [
+        "Total Extent", "Total Plot Extent", "Total Site Extent",
+        "Total Open Plot Area", "Total Land Extent",
+        "out of total extent of admeasuring 790 Square yards",
+        "Total Extent of Plot", "Total extent admeasuring",
+        "Total extent of admeasuring", "790 Square yards",
+        "admeasuring area 790",
+    ],
+
+    "property_classification": [
+        "Classification of the Area", "Area Classification",
+        "Locality Type", "Area Type",
+        "High / Middle / Poor", "Income Category",
+        "Urban / Semi Urban / Rural",
+        "Class of Locality", "Locality Class",
+        "Shetra Ka Vargikaran",
+        "Residential Area", "Commercial Area",
+        "Municipality Limits", "GHMC Limits",
+        "Coming under Municipality Limits",
+    ],
+
+    "project_type": [
+        "Type of Project", "Project Type",
+        "Residential Complex", "Residential Apartment",
+        "Commercial Complex", "Mixed Use Building",
+        "constructing Residential Complex",
+        "construction of residential Apartment",
+        "by Name", "Named as",
+    ],
+
+    "no_of_units": [
+        "No of Units", "Number of Units",
+        "No of Flats", "Number of Flats",
+        "No of Apartments", "Number of Apartments",
+        "Total Flats", "Total Units",
+    ],
+
+    "electricity": [
+        "Electricity", "Power Supply",
+        "Electrical Connection", "Power Connection",
+        "EB Connection", "TSECPDCL",
+        "Electrical Works", "Electrification",
+    ],
+
+    "water_supply": [
+        "Water Supply", "Water Connection",
+        "Water Availability", "Water Source",
+        "GHMC Water", "Bore Well", "Corporation Water",
+        "Water Fittings", "Sanitary Fittings",
+    ],
+
+    "drainage": [
+        "Drainage", "Sewage", "Drainage System",
+        "UGD", "Underground Drainage",
+        "Storm Water Drain",
+    ],
+
+    "amenities": [
+        "Amenities", "Facilities", "Features",
+        "Infrastructure", "Utilities",
+        "Civic Amenities",
+    ],
+
+    "approach_road": [
+        "Approach Road", "Road Access", "Road Type",
+        "Road Connectivity", "Access Road",
+        "Metalled Road", "Tar Road", "CC Road",
+        "BT Road", "Kutcha Road",
+        "30 Feet Wide Road", "30ft Road",
+    ],
+
+    "gps_coordinates": [
+        "GPS Coordinates", "Geo Coordinates",
+        "Lat/Long", "Latitude/Longitude",
+        "GPS Location", "Coordinates",
+        "Latitude", "Longitude", "Lat", "Long",
+    ],
+
+    "insurance_value": [
+        "Insurance Value", "Insurable Value",
+        "Insurance Amount", "Cover Amount",
+        "Bima Mulya",
+    ],
+
+    "rental_value": [
+        "Rental Value", "Monthly Rent",
+        "Annual Rent", "Rental Income",
+        "Expected Rent", "Fair Rental Value",
+        "Kiraya Mulya",
+    ],
+
+    "depreciation": [
+        "Depreciation", "Depreciation %",
+        "Depreciation Percentage", "Dep %",
+        "Accumulated Depreciation", "Wear and Tear",
+        "Mulya Hras",
+    ],
+
+    "replacement_cost": [
+        "Replacement Cost", "Cost of Reconstruction",
+        "Reproduction Cost", "Reinstatement Cost",
+        "Construction Cost", "Cost of Construction",
+        "Building Cost",
+    ],
+
+    "land_value": [
+        "Land Value", "Value of Land", "Plot Value",
+        "Site Value", "Land Cost",
+        "Bhoomi Mulya", "Zameen Mulya",
+    ],
+
+    "building_value": [
+        "Building Value", "Value of Building",
+        "Structure Value", "Construction Value",
+        "Bhavan Mulya", "Nirman Mulya",
+    ],
+
+    "total_valuation": [
+        "Total Valuation", "Total Value",
+        "Total Market Value", "Gross Value",
+        "Final Valuation", "Grand Total Value",
+        "Kul Mulyankan", "Kul Mulya",
+        "TOTAL", "Total Amount",
+        "28,25,000/-",
+    ],
+
+    "genuineness_of_plan": [
+        "Whether genuineness or authenticity of approved map / Plan is Verified",
+        "Genuineness of Plan", "Authenticity of Plan",
+        "Plan Verified", "Map Verified",
+        "Approved Plan Verification", "Plan Authenticity",
+    ],
+
+    "government_enactments": [
+        "Whether covered under any State / Central Govt. enactments",
+        "Government Enactments", "Legal Restrictions",
+        "Urban Land Ceiling", "ULC Act",
+        "Agency Area", "Scheduled Area",
+        "Cantonment Area", "Notified Area",
+        "Government Notifications",
+        "Act 9 of 1977", "prohibition of Transfer",
+    ],
+
+    "ftl_buffer_zone": [
+        "FTL and Buffer Zone Details", "FTL Details",
+        "Buffer Zone", "FTL Buffer Zone",
+        "Full Tank Level", "Tank Bed Land",
+        "Lake Buffer Zone", "Water Body Buffer",
+        "Cheruvu Seema", "Lake FTL", "Water Tank",
+        "FTL & Buffer Zone", "FTL / Buffer Zone",
+    ],
+
+    "photograph_reference": [
+        "Photo Reference", "Photograph",
+        "Site Photo", "Property Photo",
+        "Photo No", "Image No",
+    ],
+
+    "site_description": [
+        "Site Description", "Description of Site",
+        "Site Details", "Plot Description",
+        "Site Particulars", "Location Description",
+    ],
+
+    "recommendations": [
+        "Recommendations", "Recommendation",
+        "Suggested Value", "Recommended Value",
+        "Valuer Recommendation",
+    ],
+
+    "revenue_division": [
+        "Revenue Division", "Division", "Sub-Division",
+        "Revenue Circle", "Circle",
+        "Ramachandrapuram", "GHMC Ramachandrapuram",
+    ],
+
+    "name_of_applicant": [
+        "Name of Applicant", "Applicant", "Applicant Name",
+        "Customer Name", "Client Name", "Borrower",
+        "Borrower Name", "Co-borrower",
+        "Name of the Borrower", "Co-Applicant",
+    ],
+
+    "valuer_registration_no": [
+        "Valuer Registration No", "Regd Valuer No",
+        "Registration No of Valuer", "IOBB No",
+        "Valuer Licence No", "Regd No",
+    ],
+
+    "locality_classification": [
+        "Classification of the Area", "Area Classification",
+        "Locality Type", "Area Type",
+        "High / Middle / Poor", "Income Category",
+        "Urban / Semi Urban / Rural",
+        "Class of Locality", "Locality Class",
+    ],
+
+    "urban_rural": [
+        "Urban / Semi Urban / Rural", "Urban",
+        "Semi Urban", "Rural", "Area Type",
+        "Location Type", "Shahari / Gramin",
+        "Municipality Limits", "Gram Panchayat",
+    ],
+
+    "municipality_limits": [
+        "Coming under Municipality Limits",
+        "Municipality Limits", "Corporation Limits",
+        "Village Panchayat", "Panchayat Area",
+        "GHMC Limits", "Municipal Corporation",
+        "Gram Panchayat Limits", "Nagar Palika",
+        "ULB Limits",
+        "under GHMC", "GHMC Ramachandrapuram",
+    ],
+
 }
 
 class BaseExtractor:

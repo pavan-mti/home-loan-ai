@@ -11,6 +11,23 @@ from xml.etree import ElementTree
 
 from fastapi import UploadFile
 
+from .field_patterns import (
+    FIELD_LABELS_EXT,
+    MULTILINE_FIELDS,
+    BOUNDARY_FIELDS,
+    FIELD_CLEANERS,
+    FIELD_VALIDATORS,
+    TABLE_EXACT,
+    BOUNDARY,
+    SAME_LINE,
+    ADDRESS,
+    NEXT_LINE,
+    EXACT,
+    MULTILINE,
+    FUZZY,
+    REGEX,
+)
+
 try:
     from openai import OpenAI
 except Exception:  # pragma: no cover - optional dependency guard
@@ -978,11 +995,430 @@ def get_field_display_name(canonical: str) -> str:
             return labels[0]
     except Exception:
         pass
-        
     return canonical.replace("_", " ").title()
 
 
-def analyze_document(text_or_path: str | Path, required_fields: list[str] | None = None) -> dict[str, Any] | list[dict[str, Any]]:
+def extract_same_line_value(label: str, line_text: str, line_idx: int) -> dict[str, Any] | None:
+    pattern = rf"(?i)(?<!\w){re.escape(label)}(?!\w)"
+    match = re.search(pattern, line_text)
+    if not match:
+        return None
+    after_text = line_text[match.end():].strip()
+    after_text_clean = re.sub(r'^[:\-–—=\s]+', '', after_text).strip()
+    if after_text_clean:
+        return {
+            "value": after_text_clean,
+            "matched_label": label,
+            "match_type": "same_line",
+            "confidence": SAME_LINE,
+            "source_page": 1,
+            "source_line": line_idx + 1,
+        }
+    return None
+
+
+def extract_multiline_value(start_idx: int, lines: list[str], stop_aliases: list[str]) -> str | None:
+    accumulated = []
+    for idx in range(start_idx, min(len(lines), start_idx + 7)):
+        line = lines[idx].strip()
+        if not line:
+            continue
+        stop_triggered = False
+        for stop_lbl in stop_aliases:
+            if re.search(rf"(?i)(?<!\w){re.escape(stop_lbl)}(?!\w)", line):
+                stop_triggered = True
+                break
+        if stop_triggered and idx > start_idx:
+            break
+        accumulated.append(line)
+    if accumulated:
+        combined = ", ".join(accumulated)
+        combined = re.sub(r'\s+', ' ', combined)
+        return combined
+    return None
+
+
+def extract_boundaries(lines: list[str], required_fields: list[str]) -> dict[str, dict[str, Any]]:
+    extracted = {}
+    dir_mapping = {
+        "north": ["boundaries_north", "north_boundary"],
+        "south": ["boundaries_south", "south_boundary"],
+        "east": ["boundaries_east", "east_boundary"],
+        "west": ["boundaries_west", "west_boundary"],
+    }
+    for direction, keys in dir_mapping.items():
+        active_keys = [k for k in keys if k in required_fields]
+        if not active_keys:
+            continue
+        val = None
+        source_line = None
+        matched_lbl = None
+        for idx, line in enumerate(lines):
+            pattern = rf"(?i)\b(?:bounded\s+on\s+(?:the\s+)?{direction}|{direction}\s+(?:boundary|side|direction)|{direction})\b\s*(?:by\s*[:\-–—=]?|[:\-–—=])?\s*([^\n]+)"
+            m = re.search(pattern, line)
+            if m:
+                cand = m.group(1).strip()
+                cand_clean = re.sub(r'^(?:by\s*[:\-–—=]?|[:\-–—=\s])+', '', cand).strip()
+                if cand_clean and len(cand_clean) > 2:
+                    val = cand_clean
+                    source_line = idx + 1
+                    matched_lbl = direction.upper()
+                    break
+        if val:
+            for k in active_keys:
+                extracted[k] = {
+                    "value": val,
+                    "source_page": 1,
+                    "source_line": source_line,
+                    "matched_label": matched_lbl,
+                    "match_type": "boundary",
+                    "source_method": "rule_based",
+                    "final_confidence": BOUNDARY,
+                    "ocr_confidence": BOUNDARY,
+                    "regex_confidence": BOUNDARY,
+                    "validation_error": False
+                }
+    return extracted
+
+
+def extract_regex_value(field_code: str, extracted_val: str | None, line_context: str | None) -> str | None:
+    patterns = {
+        "inspection_date": r'\d{1,2}[/-]\d{1,2}[/-]\d{2,4}',
+        "valuation_date": r'\d{1,2}[/-]\d{1,2}[/-]\d{2,4}',
+        "postal_code": r'\d{6}',
+        "pincode": r'\d{6}',
+        "survey_number": r'[A-Za-z0-9/-]+',
+        "survey_no": r'[A-Za-z0-9/-]+',
+        "plot_no_survey_no": r'[A-Za-z0-9/-]+',
+    }
+    
+    pat = None
+    for k, p in patterns.items():
+        if k in field_code.lower():
+            pat = p
+            break
+    
+    if not pat:
+        return None
+        
+    if extracted_val:
+        m = re.search(pat, extracted_val)
+        if m:
+            return m.group(0)
+            
+    if line_context:
+        m = re.search(pat, line_context)
+        if m:
+            return m.group(0)
+            
+    return None
+
+
+def extract_address(value: str) -> str:
+    if not value:
+        return ""
+    val_clean = value.replace('\n', ', ').replace('\r', ', ')
+    val_clean = re.sub(r'(?i)\bH\s*\.?\s*No\s*\.?\s*\b', 'H.No. ', val_clean)
+    val_clean = re.sub(r'(?i)\bD\s*\.?\s*No\s*\.?\s*\b', 'Door No. ', val_clean)
+    val_clean = re.sub(r'(?i)\bFlat\s*\.?\s*No\s*\.?\s*\b', 'Flat No. ', val_clean)
+    val_clean = re.sub(r'(?i)\bPlot\s*\.?\s*No\s*\.?\s*\b', 'Plot No. ', val_clean)
+    
+    val_clean = re.sub(r'\s+', ' ', val_clean)
+    val_clean = re.sub(r'\s*,\s*', ', ', val_clean)
+    val_clean = re.sub(r',(\s*,)+', ',', val_clean)
+    val_clean = val_clean.strip(', ')
+    return val_clean
+
+
+def log_failed_extraction(field_code: str, value: str | None, confidence: float, reason: str) -> None:
+    csv_path = STORAGE_ROOT / "failed_extractions.csv"
+    file_exists = csv_path.exists()
+    try:
+        import csv
+        import datetime
+        with open(csv_path, mode="a", encoding="utf-8", newline="") as f:
+            writer = csv.writer(f)
+            if not file_exists:
+                writer.writerow(["timestamp", "field_code", "extracted_value", "confidence", "reason"])
+            timestamp = datetime.datetime.now().isoformat()
+            writer.writerow([timestamp, field_code, value or "", f"{confidence:.2f}", reason])
+    except Exception as e:
+        print(f"Error logging failed extraction to CSV: {e}")
+
+
+def rule_based_fallback_fields(
+    fields: dict[str, dict[str, Any]],
+    full_text: str,
+    required_fields: list[str] | None,
+    page_results: list[dict[str, Any]] | None = None
+) -> dict[str, dict[str, Any]]:
+    from rapidfuzz import fuzz
+    import re
+
+    lines_with_indices = [(i, l.strip()) for i, l in enumerate(full_text.splitlines()) if l.strip()]
+
+    all_stop_aliases = []
+    for k, aliases_list in FIELD_LABELS_EXT.items():
+        all_stop_aliases.extend(aliases_list)
+    all_stop_aliases = sorted(list(set(all_stop_aliases)), key=len, reverse=True)
+
+    def find_page_for_line(matched_line_text: str, page_res: list[dict[str, Any]] | None) -> int:
+        if not page_res:
+            return 1
+        for page in page_res:
+            p_num = page.get("page_number", 1)
+            for line_obj in page.get("lines", []):
+                if matched_line_text.strip() == line_obj.get("text", "").strip():
+                    return p_num
+        return 1
+
+    try:
+        from .extractors.base import FIELD_LABELS as BASE_LABELS
+    except Exception:
+        BASE_LABELS = {}
+
+    for field_code, data in fields.items():
+        if field_code == "confidence":
+            continue
+        if required_fields is not None and field_code not in required_fields:
+            continue
+            
+        if data.get("final_confidence", 0.0) < 0.90:
+            labels = FIELD_LABELS_EXT.get(field_code) or BASE_LABELS.get(field_code) or [field_code.replace("_", " ").title()]
+            labels = sorted(labels, key=len, reverse=True)
+            
+            value = None
+            confidence = 0.0
+            match_type = None
+            matched_label = None
+            matched_line_idx = None
+            
+            # --- 1. Table Match ---
+            for line_idx, line in lines_with_indices:
+                if line.startswith("|") and line.endswith("|"):
+                    cells = [c.strip() for c in line.split("|") if c.strip()]
+                    if len(cells) >= 2:
+                        first_cell = cells[0]
+                        is_match = False
+                        for lbl in labels:
+                            if lbl.lower() == first_cell.lower():
+                                is_match = True
+                                match_type = "table"
+                                confidence = TABLE_EXACT
+                                matched_label = lbl
+                                break
+                            elif fuzz.partial_ratio(lbl.lower(), first_cell.lower()) > 85:
+                                is_match = True
+                                match_type = "table"
+                                confidence = TABLE_EXACT
+                                matched_label = lbl
+                                break
+                        if is_match:
+                            value = cells[1]
+                            matched_line_idx = line_idx
+                            break
+            
+            # --- 2. Boundary Match ---
+            if not value and field_code in BOUNDARY_FIELDS:
+                direction = None
+                for d in ["north", "south", "east", "west"]:
+                    if d in field_code.lower():
+                        direction = d
+                        break
+                if direction:
+                    for line_idx, line in lines_with_indices:
+                        pattern = rf"(?i)\b(?:bounded\s+on\s+(?:the\s+)?{direction}|{direction}\s+(?:boundary|side|direction)|{direction})\b\s*[:\-–—=]?\s*([^\n]+)"
+                        m = re.search(pattern, line)
+                        if m:
+                            cand = m.group(1).strip()
+                            cand_clean = re.sub(r'^[:\-–—=\s]+', '', cand).strip()
+                            if cand_clean and len(cand_clean) > 2:
+                                value = cand_clean
+                                match_type = "boundary"
+                                matched_label = direction.upper()
+                                matched_line_idx = line_idx
+                                confidence = BOUNDARY
+                                break
+
+            # --- 3. Same-line Match ---
+            if not value:
+                for line_idx, line in lines_with_indices:
+                    for lbl in labels:
+                        pattern = rf"(?i)(?<!\w){re.escape(lbl)}(?!\w)"
+                        match = re.search(pattern, line)
+                        if match:
+                            after_text = line[match.end():].strip()
+                            after_text_clean = re.sub(r'^[:\-–—=\s]+', '', after_text).strip()
+                            if after_text_clean and len(after_text_clean) > 1:
+                                val_lc = after_text_clean.lower()
+                                if not any(x in val_lc for x in ["gramkhantam", "abadi", "houseno", "door no", "plotno", "street / road", "locality name"]):
+                                    value = after_text_clean
+                                    match_type = "same_line"
+                                    matched_label = lbl
+                                    matched_line_idx = line_idx
+                                    confidence = SAME_LINE
+                                    break
+                    if value:
+                        break
+
+            # --- 4. Next-line Match ---
+            if not value:
+                for i, (line_idx, line) in enumerate(lines_with_indices):
+                    for lbl in labels:
+                        pattern = rf"(?i)(?<!\w){re.escape(lbl)}(?!\w)"
+                        match = re.search(pattern, line)
+                        if match:
+                            after_text = line[match.end():].strip()
+                            after_text_clean = re.sub(r'^[:\-–—=\s]+', '', after_text).strip()
+                            if not after_text_clean or not re.search(r'[a-zA-Z0-9]', after_text_clean):
+                                if i + 1 < len(lines_with_indices):
+                                    next_line_idx, next_line_text = lines_with_indices[i + 1]
+                                    has_other_label = False
+                                    for stop_lbl in all_stop_aliases:
+                                        if re.search(rf"(?i)(?<!\w){re.escape(stop_lbl)}(?!\w)", next_line_text):
+                                            has_other_label = True
+                                            break
+                                    if not has_other_label:
+                                        value = next_line_text
+                                        match_type = "next_line"
+                                        matched_label = lbl
+                                        matched_line_idx = next_line_idx
+                                        confidence = NEXT_LINE
+                                        break
+                    if value:
+                        break
+
+            # --- 5. Multiline Match ---
+            if not value and field_code in MULTILINE_FIELDS:
+                for i, (line_idx, line) in enumerate(lines_with_indices):
+                    for lbl in labels:
+                        pattern = rf"(?i)(?<!\w){re.escape(lbl)}(?!\w)"
+                        match = re.search(pattern, line)
+                        if match:
+                            after_text = line[match.end():].strip()
+                            after_text_clean = re.sub(r'^[:\-–—=\s]+', '', after_text).strip()
+                            
+                            initial_val = ""
+                            start_lookahead_idx = i
+                            if after_text_clean and re.search(r'[a-zA-Z0-9]', after_text_clean):
+                                initial_val = after_text_clean
+                            else:
+                                if i + 1 < len(lines_with_indices):
+                                    next_line_idx, next_line_text = lines_with_indices[i + 1]
+                                    initial_val = next_line_text
+                                    start_lookahead_idx = i + 1
+                            
+                            multiline_val = extract_multiline_value(start_lookahead_idx, [l for _, l in lines_with_indices], all_stop_aliases)
+                            if multiline_val:
+                                value = multiline_val
+                                match_type = "multiline"
+                                matched_label = lbl
+                                matched_line_idx = line_idx
+                                confidence = MULTILINE
+                                break
+                    if value:
+                        break
+
+            # --- 6. Exact Label Match (Fallback contains) ---
+            if not value:
+                for line_idx, line in lines_with_indices:
+                    for lbl in labels:
+                        if lbl.lower() in line.lower():
+                            ext_val = extract_value_after_label(lbl, line, line_idx)
+                            if ext_val:
+                                value = ext_val
+                                match_type = "exact"
+                                matched_label = lbl
+                                matched_line_idx = line_idx
+                                confidence = EXACT
+                                break
+                    if value:
+                        break
+
+            # --- 7. Fuzzy Match ---
+            if not value:
+                for i, (line_idx, line) in enumerate(lines_with_indices):
+                    for lbl in labels:
+                        if fuzz.partial_ratio(lbl.lower(), line.lower()) > 80:
+                            separators = [':', '=', ' - ', ' – ', ' — ']
+                            for sep in separators:
+                                if sep in line:
+                                    parts = line.split(sep, 1)
+                                    if fuzz.partial_ratio(lbl.lower(), parts[0].lower()) > 80:
+                                        ext_val = parts[1].strip()
+                                        ext_val_cleaned = re.sub(r'^[:\-–—=\s]+', '', ext_val).strip()
+                                        if ext_val_cleaned:
+                                            value = ext_val_cleaned
+                                            match_type = "fuzzy"
+                                            matched_label = lbl
+                                            matched_line_idx = line_idx
+                                            confidence = FUZZY
+                                            break
+                            if value:
+                                break
+                            if i + 1 < len(lines_with_indices):
+                                next_line_idx, next_line_text = lines_with_indices[i + 1]
+                                ext_val_cleaned = re.sub(r'^[:\-–—=\s]+', '', next_line_text).strip()
+                                if ext_val_cleaned:
+                                    value = ext_val_cleaned
+                                    match_type = "fuzzy"
+                                    matched_label = lbl
+                                    matched_line_idx = line_idx
+                                    confidence = FUZZY
+                                    break
+                    if value:
+                        break
+
+            # --- 8. Regex Match ---
+            if not value:
+                for line_idx, line in lines_with_indices:
+                    regex_val = extract_regex_value(field_code, None, line)
+                    if regex_val:
+                        value = regex_val
+                        match_type = "regex"
+                        matched_label = field_code
+                        matched_line_idx = line_idx
+                        confidence = REGEX
+                        break
+
+            # Special case: Village contains "VILLAGE"
+            if not value and "village" in field_code.lower():
+                for line_idx, line in lines_with_indices:
+                    m = re.search(r'(?i).*\bVILLAGE\b', line)
+                    if m:
+                        value = m.group(0).strip()
+                        match_type = "regex"
+                        matched_label = "VILLAGE"
+                        matched_line_idx = line_idx
+                        confidence = REGEX
+                        break
+
+            # Safe Telugu encoding prints
+            safe_field = field_code.encode('ascii', errors='replace').decode('ascii')
+            safe_value = value.encode('ascii', errors='replace').decode('ascii') if value else "None"
+            safe_match_type = str(match_type)
+            safe_matched_lbl = matched_label.encode('ascii', errors='replace').decode('ascii') if matched_label else "None"
+            safe_page = find_page_for_line(lines_with_indices[matched_line_idx][1], page_results) if (matched_line_idx is not None and page_results) else 1
+            safe_line_num = (lines_with_indices[matched_line_idx][0] + 1) if matched_line_idx is not None else "None"
+            
+            print(f"[DEBUG Extraction] FIELD: {safe_field} | VALUE: {safe_value} | MATCH TYPE: {safe_match_type} | MATCHED LABEL: {safe_matched_lbl} | CONFIDENCE: {confidence:.2f} | PAGE NUMBER: {safe_page} | LINE NUMBER: {safe_line_num}")
+
+            if value:
+                value = value.strip().strip("|").strip()
+                data["value"] = value
+                data["matched_label"] = matched_label
+                data["match_type"] = match_type
+                data["source_method"] = "rule_based"
+                data["source_line"] = (lines_with_indices[matched_line_idx][0] + 1) if matched_line_idx is not None else None
+                data["source_page"] = find_page_for_line(lines_with_indices[matched_line_idx][1], page_results) if (matched_line_idx is not None and page_results) else 1
+                data["ocr_confidence"] = confidence
+                data["regex_confidence"] = confidence
+                data["final_confidence"] = confidence
+
+    return fields
+
+
+def analyze_document(text_or_path: str | Path, required_fields: list[str]) -> list[dict[str, Any]]:
     path_obj = Path(text_or_path) if isinstance(text_or_path, (str, Path)) else None
     is_path = False
     if path_obj and len(str(text_or_path)) < 500:
@@ -1039,69 +1475,104 @@ def analyze_document(text_or_path: str | Path, required_fields: list[str] | None
     receipt_ext = ReceiptExtractor()
     noc_ext = NOCExtractor()
 
-    # Pass required fields filter to extractor instances
-    if required_fields is not None:
-        for ext in [agreement_ext, schedule_ext, wo_ext, receipt_ext, noc_ext]:
-            ext.required_fields = required_fields
+    if required_fields is None:
+        raise ValueError("required_fields is mandatory for template-driven extraction.")
 
-    fields = copy.deepcopy(MASTER_DICTIONARY)
-    fields.update(agreement_ext.extract(markdown_text, page_results))
-    fields.update(schedule_ext.extract(markdown_text, page_results))
-    fields.update(wo_ext.extract(markdown_text, page_results))
-    fields.update(receipt_ext.extract(markdown_text, page_results))
-    fields.update(noc_ext.extract(markdown_text, page_results))
+    for ext in [agreement_ext, schedule_ext, wo_ext, receipt_ext, noc_ext]:
+        ext.required_fields = required_fields
+    fields = {k: copy.deepcopy(v) for k, v in MASTER_DICTIONARY.items() if k in required_fields}
 
-    # Invoke Gemini fallback
-    from .gemini_service import GeminiService
-    gemini_service = GeminiService()
-    fields = gemini_service.fallback_low_confidence_fields(fields, markdown_text, required_fields)
+    def safe_update(target_dict, update_dict):
+        for k, v in update_dict.items():
+            if k in required_fields:
+                target_dict[k] = v
+
+    safe_update(fields, agreement_ext.extract(markdown_text, page_results))
+    safe_update(fields, schedule_ext.extract(markdown_text, page_results))
+    safe_update(fields, wo_ext.extract(markdown_text, page_results))
+    safe_update(fields, receipt_ext.extract(markdown_text, page_results))
+    safe_update(fields, noc_ext.extract(markdown_text, page_results))
+
+    # Invoke offline rule-based fallback
+    fields = rule_based_fallback_fields(fields, markdown_text, required_fields, page_results)
 
     # Post-process to ensure all key fields are filled accurately
     fields = _post_process_extracted_fields(fields, markdown_text, required_fields)
 
-    # Apply validations
-    fields = validate_extracted_fields(fields, required_fields)
+    # Apply cleaners and validations
+    for k in required_fields:
+        field_data = fields.get(k)
+        if not field_data or not isinstance(field_data, dict):
+            field_data = make_empty_field()
+            fields[k] = field_data
+            
+        val = field_data.get("value")
+        
+        # Clean value if exists
+        if val:
+            if k in FIELD_CLEANERS:
+                val = FIELD_CLEANERS[k](val)
+            elif k in {
+                "property_address", "postal_address_of_the_property",
+                "owner_address", "purchaser_address", "residential_address"
+            }:
+                val = extract_address(val)
+            field_data["value"] = val
+            
+        # Validate value
+        validation_error = False
+        if k in FIELD_VALIDATORS and val:
+            is_valid = FIELD_VALIDATORS[k](val)
+            if not is_valid:
+                validation_error = True
+                
+        field_data["validation_error"] = validation_error
+        
+        if validation_error:
+            field_data["ocr_confidence"] = 0.0
+            field_data["regex_confidence"] = 0.0
+            field_data["final_confidence"] = 0.0
+            field_data["validation_status"] = "invalid"
+            field_data["validation_message"] = f"Field validation failed for {k}"
+        else:
+            if "validation_status" not in field_data:
+                field_data["validation_status"] = "valid"
+            if "validation_message" not in field_data:
+                field_data["validation_message"] = None
 
-    if required_fields is not None and len(required_fields) > 0:
-        # Dynamic response format
-        dynamic_list = []
-        for k in required_fields:
-            field_data = fields.get(k) or make_empty_field()
-            val = field_data.get("value")
-            raw_conf = field_data.get("final_confidence", 0.0)
-            conf_percent = int(raw_conf * 100)
-            display_name = get_field_display_name(k)
-            dynamic_list.append({
-                "field_name": display_name,
-                "canonical_name": k,
-                "value": val,
-                "confidence": conf_percent
-            })
-        return dynamic_list
+    # Dynamic response format
+    dynamic_list = []
+    for k in required_fields:
+        field_data = fields.get(k) or make_empty_field()
+        val = field_data.get("value")
+        raw_conf = field_data.get("final_confidence", 0.0)
+        conf_percent = int(raw_conf * 100)
+        display_name = get_field_display_name(k)
+        
+        item = {
+            "field_name": display_name,
+            "label": display_name,
+            "canonical_name": k,
+            "value": val,
+            "confidence": conf_percent,
+            "source_page": field_data.get("source_page"),
+            "source_line": field_data.get("source_line"),
+            "matched_label": field_data.get("matched_label"),
+            "match_type": field_data.get("match_type"),
+            "source_method": field_data.get("source_method") or ("rule_based" if val else None),
+            "validation_error": field_data.get("validation_error", False)
+        }
+        dynamic_list.append(item)
+        
+        # Record metric in field_metrics
+        try:
+            from .field_metrics import record_field_extraction
+            record_field_extraction(k, bool(val) and not field_data.get("validation_error", False), raw_conf, field_data.get("validation_error", False))
+        except Exception as e:
+            print(f"Error recording field extraction: {e}")
+            
+        if not val or field_data.get("validation_error", False) or raw_conf < 0.90:
+            reason = "empty_value" if not val else ("validation_failed" if field_data.get("validation_error", False) else "low_confidence")
+            log_failed_extraction(k, val, raw_conf, reason)
 
-    # Construct final simplified UI fields
-    mapped_fields = {}
-    mapped_fields["inspection_date"] = fields.get("inspection_date") or make_empty_field()
-    mapped_fields["valuation_date"] = fields.get("valuation_date") or make_empty_field()
-    mapped_fields["owner_name"] = fields.get("owner_name") or make_empty_field()
-    mapped_fields["purchaser_details"] = _make_composite_field(fields, ["purchaser_name", "purchaser_address", "purchaser_phone"])
-    mapped_fields["property_description"] = fields.get("property_description") or make_empty_field()
-    mapped_fields["prohibited_property_details"] = fields.get("prohibited_property_details") or make_empty_field()
-    mapped_fields["legal_opinion"] = fields.get("legal_opinion") or make_empty_field()
-    mapped_fields["mortgage_details"] = fields.get("mortgage_details") or make_empty_field()
-    mapped_fields["ftl_buffer_zone_details"] = fields.get("ftl_buffer_zone_details") or make_empty_field()
-    mapped_fields["plot_survey_number"] = _make_composite_field(fields, ["plot_number", "survey_number"])
-    mapped_fields["door_house_number"] = fields.get("door_number") or make_empty_field()
-    mapped_fields["ts_number_village"] = _make_composite_field(fields, ["ts_number", "village"])
-    mapped_fields["ward_taluka"] = _make_composite_field(fields, ["ward", "taluka"])
-    mapped_fields["mandal_district"] = _make_composite_field(fields, ["mandal", "district"])
-    mapped_fields["property_address"] = fields.get("property_address") or make_empty_field()
-
-    # Calculate root-level confidence on mapped fields
-    non_null_confs = [
-        f["final_confidence"] for f in mapped_fields.values() 
-        if isinstance(f, dict) and f.get("value") is not None
-    ]
-    mapped_fields["confidence"] = sum(non_null_confs) / len(non_null_confs) if non_null_confs else 0.0
-
-    return mapped_fields
+    return dynamic_list

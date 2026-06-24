@@ -17,11 +17,26 @@ from .template_parser import parse_template_docx, parse_template_pdf
 
 
 FIELD_MAPPING = {
+    "Borrower Name": "owner_name",
+    "Owner Name": "owner_name",
+    "Name of Owner": "owner_name",
+    "Name of Owner(s)": "owner_name",
+    "Name of Owner(S)": "owner_name",
+    "Survey Number": "survey_number",
+    "Survey No": "survey_number",
+    "Survey No. / Door No.": "survey_number",
+    "Village": "village",
+    "Door Number": "door_number",
+    "Property Address": "property_address",
+    "Property Description": "property_description",
     "Date of Inspection": "inspection_date",
     "Date of Valuation": "valuation_date",
-    "Name of Owner": "owner_name",
-    "Survey Number": "survey_number",
-    "Village": "village"
+    "Purchaser Details": "purchaser_name",
+    "Purchaser Name": "purchaser_name",
+    "Application / LAN No.": "document_id",
+    "Purpose": "valuation_purpose",
+    "Date of Visit": "inspection_date",
+    "Date of Report": "valuation_date",
 }
 
 
@@ -222,7 +237,7 @@ class TemplateService:
         self.repository.delete_template(template)
         return True
 
-    def get_template_fields(self, template_id: int, as_strings: bool = False) -> list[str] | list[dict[str, Any]]:
+    def get_template_fields(self, template_id: int, as_strings: bool = True) -> list[str] | list[dict[str, Any]]:
         fields = (
             self.repository.db.query(TemplateField)
             .filter(TemplateField.template_id == template_id)
@@ -248,7 +263,7 @@ class TemplateService:
     def get_template_required_fields(self, template_id: int) -> list[str]:
         fields = (
             self.repository.db.query(TemplateField)
-            .filter(TemplateField.template_id == template_id, TemplateField.field_type == "dynamic")
+            .filter(TemplateField.template_id == template_id, TemplateField.field_type == "AUTO")
             .order_by(TemplateField.display_order.asc())
             .all()
         )
@@ -311,7 +326,7 @@ class TemplateService:
             print(f"{idx}. {field_data['field_name']} ({field_data['field_type']})")
         print(f"\nInserted {len(placeholders)} template fields")
         
-        return self.get_template_fields(template_id)
+        return self.get_template_fields(template_id, as_strings=False)
 
     def map_fields(self, template_id: int, upload_paths: list[Path]) -> dict[str, Any]:
         template = self.repository.get_template(template_id)
@@ -332,12 +347,41 @@ class TemplateService:
                 "text": extracted_text,
             }
         print(f"[TemplateService] All files extracted. Running classification and field mapping...")
-        result = self.mapping_engine.map_template_fields(template.template_content_json, document_bundle)
+        
+        from .documents import analyze_document
+        required_fields = self.get_template_required_fields(template_id)
+        extracted_results = {}
+        for upload_path in upload_paths:
+            print(f"[TemplateService] Running analyze_document on path: {upload_path}")
+            doc_results = analyze_document(upload_path, required_fields)
+            print(f"[TemplateService] Extracted dict returned by analyze_document: {doc_results}")
+            print("\n===== EXTRACTED RESULTS =====")
+            print(extracted_results)
+            print("============================\n")
+            for res in doc_results:
+                canon = res.get("canonical_name")
+                val = res.get("value")
+                conf = res.get("confidence", 0)
+                if val:
+                    existing = extracted_results.get(canon)
+                    if not existing or conf > existing.get("confidence", 0):
+                        extracted_results[canon] = res
+
+        print("\n========== TEMPLATE CONTENT ==========")
+        print(template.template_content_json)
+        print("======================================\n")
+
+        result = self.mapping_engine.map_template_fields(
+            template.template_content_json,
+            document_bundle,
+            extracted_results
+        )
         total_sections = len(result.get("sections", []))
         print(f"[TemplateService] Mapping complete. {total_sections} section(s) mapped.\n")
+        print(f"[TemplateService] Final map-fields response: {result}")
         return result
 
-    def generate_report(self, template_id: int, field_values: dict[str, Any], output_name: str = "valuation_report.docx") -> Path:
+    def generate_report(self, template_id: int, field_values: dict[str, Any], output_name: str = "valuation_report.docx", header_image_path: Path | None = None) -> Path:
         template = self.repository.get_template(template_id)
         if template is None:
             raise ValueError("Template not found")
@@ -350,7 +394,13 @@ class TemplateService:
             master_dict[k] = RenderableValue(v, 1.0, False)
 
         output_path = STORAGE_ROOT / "reports" / output_name
-        return self.report_generator.generate_docx(template.original_docx_url, template.template_content_json, master_dict, output_path)
+        return self.report_generator.generate_docx(
+            template.original_docx_url,
+            template.template_content_json,
+            master_dict,
+            output_path,
+            header_image_path=header_image_path
+        )
 
     def map_saved_fields(self, template_id: int, saved_values: dict[str, Any]) -> dict[str, Any]:
         template = self.repository.get_template(template_id)
@@ -382,10 +432,21 @@ class TemplateService:
             # Recurse for nested fields
             nested = [map_field_rec(child) for child in field.get("nested_fields", [])]
             
+            f_type = field.get("field_type", "AUTO")
             res = dict(field)
-            res["extracted_value"] = val if val is not None else ""
-            res["confidence"] = 1.0 if val is not None else 0.0
-            res["needs_review"] = False if val is not None else True
+            if f_type == "SECTION":
+                res["extracted_value"] = ""
+                res["confidence"] = None
+                res["needs_review"] = False
+            elif f_type == "MANUAL":
+                res["extracted_value"] = val if val is not None else ""
+                res["confidence"] = None
+                res["needs_review"] = False
+            else: # AUTO
+                res["extracted_value"] = val if val is not None else ""
+                res["confidence"] = 1.0 if val is not None else 0.0
+                res["needs_review"] = False if val is not None else True
+                
             if nested:
                 res["nested_fields"] = nested
             return res

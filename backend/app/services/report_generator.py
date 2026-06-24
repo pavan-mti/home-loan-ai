@@ -25,12 +25,24 @@ class RenderableValue:
 
 
 class ReportGenerator:
-    def generate_docx(self, template_path: str | None, template_content_json: dict[str, Any], field_values: dict[str, Any], output_path: Path) -> Path:
+    def generate_docx(self, template_path: str | None, template_content_json: dict[str, Any], field_values: dict[str, Any], output_path: Path, header_image_path: Path | None = None) -> Path:
         resolved_template_path = self._resolve_template_path(template_path)
         if resolved_template_path is None:
             raise ValueError("original_docx_url is required to generate a template-preserving report")
 
         document = Document(str(resolved_template_path))
+        
+        if header_image_path and header_image_path.exists() and header_image_path.is_file():
+            if document.paragraphs:
+                p = document.paragraphs[0].insert_paragraph_before()
+            else:
+                p = document.add_paragraph()
+            from docx.enum.text import WD_ALIGN_PARAGRAPH
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            r = p.add_run()
+            from docx.shared import Inches
+            r.add_picture(str(header_image_path), width=Inches(6.5))
+
         resolved_values = self._resolve_field_values(template_content_json, field_values)
         self._replace_placeholders(document, resolved_values)
 
