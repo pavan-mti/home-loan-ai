@@ -521,6 +521,8 @@ def _post_process_extracted_fields(fields: dict[str, Any], text: str, required_f
             line_lc = line.lower()
             if any(sw in line_lc for sw in ["aged", "occupation", "r/o", "resident", "pan", "aadhar", "represented", "address", "developer", "builder", "technical", "note", "dimensions", "meters", "flat", "plot", "house", "survey"]):
                 break
+            if ":" in line or " - " in line or " – " in line or " — " in line or "=" in line:
+                break
             name_parts.append(line)
             
         full_name = " ".join(name_parts)
@@ -1087,9 +1089,9 @@ def extract_regex_value(field_code: str, extracted_val: str | None, line_context
         "valuation_date": r'\d{1,2}[/-]\d{1,2}[/-]\d{2,4}',
         "postal_code": r'\d{6}',
         "pincode": r'\d{6}',
-        "survey_number": r'[A-Za-z0-9/-]+',
-        "survey_no": r'[A-Za-z0-9/-]+',
-        "plot_no_survey_no": r'[A-Za-z0-9/-]+',
+        "survey_number": r'\b[A-Za-z0-9/-]*\d+[A-Za-z0-9/-]*\b',
+        "survey_no": r'\b[A-Za-z0-9/-]*\d+[A-Za-z0-9/-]*\b',
+        "plot_no_survey_no": r'\b[A-Za-z0-9/-]*\d+[A-Za-z0-9/-]*\b',
     }
     
     pat = None
@@ -1107,6 +1109,15 @@ def extract_regex_value(field_code: str, extracted_val: str | None, line_context
             return m.group(0)
             
     if line_context:
+        # Check keyword requirements for line context fallback to avoid false positives
+        line_lc = line_context.lower()
+        if "survey" in field_code.lower() or "plot" in field_code.lower():
+            if not any(kw in line_lc for kw in ["survey", "sy", "s.no", "sno", "plot", "door"]):
+                return None
+        elif "pin" in field_code.lower() or "postal" in field_code.lower():
+            if not any(kw in line_lc for kw in ["pin", "pincode", "postal", "zip", "code"]):
+                return None
+
         m = re.search(pat, line_context)
         if m:
             return m.group(0)
@@ -1156,6 +1167,7 @@ def rule_based_fallback_fields(
     import re
 
     lines_with_indices = [(i, l.strip()) for i, l in enumerate(full_text.splitlines()) if l.strip()]
+    orig_to_list_idx = {orig_idx: list_idx for list_idx, (orig_idx, _) in enumerate(lines_with_indices)}
 
     all_stop_aliases = []
     for k, aliases_list in FIELD_LABELS_EXT.items():
@@ -1398,8 +1410,11 @@ def rule_based_fallback_fields(
             safe_value = value.encode('ascii', errors='replace').decode('ascii') if value else "None"
             safe_match_type = str(match_type)
             safe_matched_lbl = matched_label.encode('ascii', errors='replace').decode('ascii') if matched_label else "None"
-            safe_page = find_page_for_line(lines_with_indices[matched_line_idx][1], page_results) if (matched_line_idx is not None and page_results) else 1
-            safe_line_num = (lines_with_indices[matched_line_idx][0] + 1) if matched_line_idx is not None else "None"
+            
+            matched_list_idx = orig_to_list_idx.get(matched_line_idx) if matched_line_idx is not None else None
+            
+            safe_page = find_page_for_line(lines_with_indices[matched_list_idx][1], page_results) if (matched_list_idx is not None and page_results) else 1
+            safe_line_num = (lines_with_indices[matched_list_idx][0] + 1) if matched_list_idx is not None else "None"
             
             print(f"[DEBUG Extraction] FIELD: {safe_field} | VALUE: {safe_value} | MATCH TYPE: {safe_match_type} | MATCHED LABEL: {safe_matched_lbl} | CONFIDENCE: {confidence:.2f} | PAGE NUMBER: {safe_page} | LINE NUMBER: {safe_line_num}")
 
@@ -1409,8 +1424,8 @@ def rule_based_fallback_fields(
                 data["matched_label"] = matched_label
                 data["match_type"] = match_type
                 data["source_method"] = "rule_based"
-                data["source_line"] = (lines_with_indices[matched_line_idx][0] + 1) if matched_line_idx is not None else None
-                data["source_page"] = find_page_for_line(lines_with_indices[matched_line_idx][1], page_results) if (matched_line_idx is not None and page_results) else 1
+                data["source_line"] = (lines_with_indices[matched_list_idx][0] + 1) if matched_list_idx is not None else None
+                data["source_page"] = find_page_for_line(lines_with_indices[matched_list_idx][1], page_results) if (matched_list_idx is not None and page_results) else 1
                 data["ocr_confidence"] = confidence
                 data["regex_confidence"] = confidence
                 data["final_confidence"] = confidence
@@ -1460,7 +1475,20 @@ def analyze_document(text_or_path: str | Path, required_fields: list[str]) -> li
         }]
         markdown_text = raw_text
 
-    # Import and run modular extractors
+    # 1. Map placeholders to canonical keys to support modular extractors & rules
+    from .template_service import map_display_name_to_canonical
+    
+    placeholders_map = {}  # maps placeholder -> canonical key (or slug)
+    canonical_keys = []
+    for placeholder in required_fields:
+        canonical = map_display_name_to_canonical(placeholder)
+        if not canonical:
+            canonical = re.sub(r"[^a-z0-9]+", "_", placeholder.lower()).strip("_")
+        placeholders_map[placeholder] = canonical
+        if canonical not in canonical_keys:
+            canonical_keys.append(canonical)
+
+    # 2. Run modular extractors using canonical keys
     from .extractors.agreement_extractor import AgreementExtractor
     from .extractors.schedule_extractor import ScheduleExtractor
     from .extractors.work_order_extractor import WorkOrderExtractor
@@ -1475,54 +1503,126 @@ def analyze_document(text_or_path: str | Path, required_fields: list[str]) -> li
     receipt_ext = ReceiptExtractor()
     noc_ext = NOCExtractor()
 
-    if required_fields is None:
-        raise ValueError("required_fields is mandatory for template-driven extraction.")
-
     for ext in [agreement_ext, schedule_ext, wo_ext, receipt_ext, noc_ext]:
-        ext.required_fields = required_fields
-    fields = {k: copy.deepcopy(v) for k, v in MASTER_DICTIONARY.items() if k in required_fields}
+        ext.required_fields = canonical_keys
+
+    modular_fields = {}
+    for canon in canonical_keys:
+        if canon in MASTER_DICTIONARY:
+            modular_fields[canon] = copy.deepcopy(MASTER_DICTIONARY[canon])
+        else:
+            modular_fields[canon] = make_empty_field()
 
     def safe_update(target_dict, update_dict):
         for k, v in update_dict.items():
-            if k in required_fields:
+            if k in canonical_keys:
                 target_dict[k] = v
 
-    safe_update(fields, agreement_ext.extract(markdown_text, page_results))
-    safe_update(fields, schedule_ext.extract(markdown_text, page_results))
-    safe_update(fields, wo_ext.extract(markdown_text, page_results))
-    safe_update(fields, receipt_ext.extract(markdown_text, page_results))
-    safe_update(fields, noc_ext.extract(markdown_text, page_results))
+    safe_update(modular_fields, agreement_ext.extract(markdown_text, page_results))
+    safe_update(modular_fields, schedule_ext.extract(markdown_text, page_results))
+    safe_update(modular_fields, wo_ext.extract(markdown_text, page_results))
+    safe_update(modular_fields, receipt_ext.extract(markdown_text, page_results))
+    safe_update(modular_fields, noc_ext.extract(markdown_text, page_results))
 
-    # Invoke offline rule-based fallback
-    fields = rule_based_fallback_fields(fields, markdown_text, required_fields, page_results)
+    # Invoke offline rule-based fallbacks using canonical keys
+    modular_fields = rule_based_fallback_fields(modular_fields, markdown_text, canonical_keys, page_results)
 
-    # Post-process to ensure all key fields are filled accurately
-    fields = _post_process_extracted_fields(fields, markdown_text, required_fields)
+    # Post-process to ensure all key fields are filled accurately using canonical keys
+    modular_fields = _post_process_extracted_fields(modular_fields, markdown_text, canonical_keys)
 
-    # Apply cleaners and validations
-    for k in required_fields:
-        field_data = fields.get(k)
+    def find_page_for_line(matched_line_text: str, page_res: list[dict[str, Any]] | None) -> int:
+        if not page_res:
+            return 1
+        for page in page_res:
+            p_num = page.get("page_number", 1)
+            for line_obj in page.get("lines", []):
+                if matched_line_text.strip() == line_obj.get("text", "").strip():
+                    return p_num
+        return 1
+
+    # 3. Main Extraction Flow: Keyed by the original placeholders
+    fields = {}
+    from .placeholder_extractor import extract_placeholder
+    from .discovery import DocumentIndex, CandidateDiscoveryEngine
+
+    doc_index = DocumentIndex(markdown_text, page_results)
+    discovery_engine = CandidateDiscoveryEngine()
+    candidate_repo = discovery_engine.discover(doc_index)
+
+    for placeholder in required_fields:
+        canon = placeholders_map[placeholder]
+        mod_data = modular_fields.get(canon)
+        
+        # If modular/rule-based extractor got a value, use it. Otherwise, extract via generic engine.
+        if mod_data and mod_data.get("value"):
+            fields[placeholder] = {
+                "value": mod_data.get("value"),
+                "source_page": mod_data.get("source_page", 1),
+                "ocr_confidence": mod_data.get("ocr_confidence", 0.8),
+                "regex_confidence": mod_data.get("regex_confidence", 0.8),
+                "final_confidence": mod_data.get("final_confidence", 0.8),
+                "validation_status": mod_data.get("validation_status", "valid"),
+                "validation_message": mod_data.get("validation_message")
+            }
+        else:
+            # Fall back to placeholder-driven extraction
+            context_dict = {
+                "document_text": markdown_text,
+                "placeholders": required_fields
+            }
+            extracted = extract_placeholder(placeholder, markdown_text, context_data=context_dict, candidate_repo=candidate_repo)
+            
+            resolved_page = 1
+            source_line_num = extracted.get("source_line")
+            if source_line_num is not None:
+                lines = markdown_text.splitlines()
+                if 0 <= source_line_num - 1 < len(lines):
+                    matched_line_text = lines[source_line_num - 1]
+                    resolved_page = find_page_for_line(matched_line_text, page_results)
+            
+            fields[placeholder] = {
+                "value": extracted.get("value"),
+                "source_page": resolved_page,
+                "ocr_confidence": extracted.get("confidence", 0.0),
+                "regex_confidence": extracted.get("confidence", 0.0),
+                "final_confidence": extracted.get("confidence", 0.0),
+                "validation_status": "valid",
+                "validation_message": extracted.get("reason"),
+                "source_line": source_line_num,
+                "matched_label": extracted.get("matched_label"),
+                "match_type": extracted.get("strategy"),
+                "source_method": "rule_based" if extracted.get("value") else None,
+                "reason": extracted.get("reason"),
+                "scores": extracted.get("scores"),
+                "explanation": extracted.get("explanation"),
+                "ranked_candidates": extracted.get("ranked_candidates")
+            }
+
+
+    # 4. Post-Extraction: Compatibility Adapter (cleaning, validations) using canonical name
+    for placeholder in required_fields:
+        canon = placeholders_map[placeholder]
+        field_data = fields.get(placeholder)
         if not field_data or not isinstance(field_data, dict):
             field_data = make_empty_field()
-            fields[k] = field_data
+            fields[placeholder] = field_data
             
         val = field_data.get("value")
         
-        # Clean value if exists
+        # Apply validation/cleaners if canonical mapping exists
         if val:
-            if k in FIELD_CLEANERS:
-                val = FIELD_CLEANERS[k](val)
-            elif k in {
+            if canon in FIELD_CLEANERS:
+                val = FIELD_CLEANERS[canon](val)
+            elif canon in {
                 "property_address", "postal_address_of_the_property",
                 "owner_address", "purchaser_address", "residential_address"
             }:
                 val = extract_address(val)
             field_data["value"] = val
             
-        # Validate value
         validation_error = False
-        if k in FIELD_VALIDATORS and val:
-            is_valid = FIELD_VALIDATORS[k](val)
+        if canon in FIELD_VALIDATORS and val:
+            is_valid = FIELD_VALIDATORS[canon](val)
             if not is_valid:
                 validation_error = True
                 
@@ -1533,26 +1633,26 @@ def analyze_document(text_or_path: str | Path, required_fields: list[str]) -> li
             field_data["regex_confidence"] = 0.0
             field_data["final_confidence"] = 0.0
             field_data["validation_status"] = "invalid"
-            field_data["validation_message"] = f"Field validation failed for {k}"
+            field_data["validation_message"] = f"Field validation failed for {placeholder}"
         else:
             if "validation_status" not in field_data:
                 field_data["validation_status"] = "valid"
             if "validation_message" not in field_data:
                 field_data["validation_message"] = None
 
-    # Dynamic response format
+    # 5. Format results back into expected list for callers
     dynamic_list = []
-    for k in required_fields:
-        field_data = fields.get(k) or make_empty_field()
+    for placeholder in required_fields:
+        canon = placeholders_map[placeholder]
+        field_data = fields.get(placeholder) or make_empty_field()
         val = field_data.get("value")
         raw_conf = field_data.get("final_confidence", 0.0)
         conf_percent = int(raw_conf * 100)
-        display_name = get_field_display_name(k)
         
         item = {
-            "field_name": display_name,
-            "label": display_name,
-            "canonical_name": k,
+            "field_name": placeholder,
+            "label": placeholder,
+            "canonical_name": canon,
             "value": val,
             "confidence": conf_percent,
             "source_page": field_data.get("source_page"),
@@ -1560,19 +1660,24 @@ def analyze_document(text_or_path: str | Path, required_fields: list[str]) -> li
             "matched_label": field_data.get("matched_label"),
             "match_type": field_data.get("match_type"),
             "source_method": field_data.get("source_method") or ("rule_based" if val else None),
-            "validation_error": field_data.get("validation_error", False)
+            "validation_error": field_data.get("validation_error", False),
+            "validation_message": field_data.get("validation_message"),
+            "reason": field_data.get("reason"),
+            "scores": field_data.get("scores"),
+            "explanation": field_data.get("explanation"),
+            "ranked_candidates": field_data.get("ranked_candidates")
         }
         dynamic_list.append(item)
         
         # Record metric in field_metrics
         try:
             from .field_metrics import record_field_extraction
-            record_field_extraction(k, bool(val) and not field_data.get("validation_error", False), raw_conf, field_data.get("validation_error", False))
+            record_field_extraction(canon, bool(val) and not field_data.get("validation_error", False), raw_conf, field_data.get("validation_error", False))
         except Exception as e:
             print(f"Error recording field extraction: {e}")
             
         if not val or field_data.get("validation_error", False) or raw_conf < 0.90:
             reason = "empty_value" if not val else ("validation_failed" if field_data.get("validation_error", False) else "low_confidence")
-            log_failed_extraction(k, val, raw_conf, reason)
+            log_failed_extraction(canon, val, raw_conf, reason)
 
-    return dynamic_list
+    return dynamic_list

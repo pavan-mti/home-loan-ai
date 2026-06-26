@@ -267,15 +267,8 @@ class TemplateService:
             .order_by(TemplateField.display_order.asc())
             .all()
         )
-        field_names = [f.field_name for f in fields]
-        required_fields = []
+        return [f.field_name for f in fields]
 
-        for name in field_names:
-            canonical = map_display_name_to_canonical(name)
-            if canonical and canonical not in required_fields:
-                required_fields.append(canonical)
-
-        return required_fields
 
 
     def delete_template_fields(self, template_id: int) -> None:
@@ -359,27 +352,39 @@ class TemplateService:
             print(extracted_results)
             print("============================\n")
             for res in doc_results:
-                canon = res.get("canonical_name")
+                placeholder = res.get("label") or res.get("field_name")
                 val = res.get("value")
                 conf = res.get("confidence", 0)
-                if val:
-                    existing = extracted_results.get(canon)
+                if val and placeholder:
+                    existing = extracted_results.get(placeholder)
                     if not existing or conf > existing.get("confidence", 0):
-                        extracted_results[canon] = res
+                        extracted_results[placeholder] = res
 
         print("\n========== TEMPLATE CONTENT ==========")
         print(template.template_content_json)
         print("======================================\n")
 
+        # Compatibility adapter: Map placeholder keys to canonical keys for MappingEngine
+        import re
+        adapted_extracted_results = {}
+        for placeholder, res in extracted_results.items():
+            canon = res.get("canonical_name")
+            if not canon:
+                canon = map_display_name_to_canonical(placeholder)
+            if not canon:
+                canon = re.sub(r"[^a-z0-9]+", "_", placeholder.lower()).strip("_")
+            adapted_extracted_results[canon] = res
+
         result = self.mapping_engine.map_template_fields(
             template.template_content_json,
             document_bundle,
-            extracted_results
+            adapted_extracted_results
         )
         total_sections = len(result.get("sections", []))
         print(f"[TemplateService] Mapping complete. {total_sections} section(s) mapped.\n")
         print(f"[TemplateService] Final map-fields response: {result}")
         return result
+
 
     def generate_report(self, template_id: int, field_values: dict[str, Any], output_name: str = "valuation_report.docx", header_image_path: Path | None = None) -> Path:
         template = self.repository.get_template(template_id)

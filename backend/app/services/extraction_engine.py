@@ -11,6 +11,18 @@ class ExtractionEngine:
     def __init__(self) -> None:
         self.gemini_service = GeminiService()
 
+    def extract_value(
+        self,
+        placeholder: str,
+        document_text: str
+    ) -> dict[str, Any]:
+        """
+        Extracts a value for a single placeholder string using a hierarchy of search strategies.
+        The engine is completely unaware of canonical field names.
+        """
+        from .placeholder_extractor import extract_placeholder
+        return extract_placeholder(placeholder, document_text, self.gemini_service)
+
     def extract_field(
         self,
         field: dict[str, Any],
@@ -20,64 +32,10 @@ class ExtractionEngine:
         """
         Coordinates keyword matching, regex searches, and Gemini fallbacks to extract a field.
         """
-        field_code = field.get("field_code", "")
         doc_source = (field.get("document_source") or "").upper()
-        keywords = field.get("keywords") or []
-        label = field.get("label", "")
-
-        # Handle static fields
-        if field.get("field_type") == "static" or field.get("static_value") is not None:
-            return {
-                "value": field.get("static_value"),
-                "confidence": 1.0,
-                "needs_review": False,
-            }
-
-        # Select relevant source text
         text_to_search = classified_docs.get(doc_source) or full_text
-
-        value = None
-        confidence = 0.0
-
-        # Step 1: Keyword extraction
-        if keywords or label:
-            search_keywords = list(keywords)
-            if label and label not in search_keywords:
-                search_keywords.append(label)
-
-            kw_res = extract_by_keywords(text_to_search, search_keywords)
-            if kw_res["confidence"] > confidence:
-                value = kw_res["value"]
-                confidence = kw_res["confidence"]
-
-        # Step 2: Regex extraction (if keyword match is not high confidence)
-        if confidence < 0.90:
-            reg_res = extract_by_regex(field_code, text_to_search)
-            if reg_res["confidence"] > confidence:
-                value = reg_res["value"]
-                confidence = reg_res["confidence"]
-
-        # Step 3: Gemini Fallback (if confidence is low)
-        if confidence < 0.7:
-            text_chunk = self._get_relevant_chunks(text_to_search, keywords, label)
-            if text_chunk:
-                ai_res = self.gemini_service.extract_field_with_llm(
-                    field_code=field_code,
-                    label=label,
-                    keywords=keywords,
-                    text_chunk=text_chunk,
-                )
-                if ai_res and ai_res.get("value"):
-                    value = ai_res["value"]
-                    confidence = ai_res.get("confidence", 0.85)
-
-        needs_review = confidence < 0.7
-
-        return {
-            "value": value,
-            "confidence": confidence,
-            "needs_review": needs_review,
-        }
+        placeholder = field.get("label") or field.get("field_code") or ""
+        return self.extract_value(placeholder, text_to_search)
 
     def _get_relevant_chunks(self, text: str, keywords: list[str], label: str) -> str:
         """

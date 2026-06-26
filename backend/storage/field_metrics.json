@@ -1,233 +1,296 @@
 {
   "general": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "purpose_of_valuation": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "inspection_date": {
-    "total_attempts": 1,
-    "successes": 1,
+    "total_attempts": 2,
+    "successes": 2,
     "failures": 0,
     "validation_errors": 0,
     "average_confidence": 0.7
   },
   "valuation_date": {
-    "total_attempts": 1,
-    "successes": 1,
+    "total_attempts": 2,
+    "successes": 2,
     "failures": 0,
     "validation_errors": 0,
     "average_confidence": 0.7
   },
   "list_of_documents": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "name_of_the_owner_s": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "name_of_the_purchaser_s_and_his_their_address_es_with_phone_no_details_of_share_of_each_owner_in_case_of_joint_ownership": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "brief_description_of_the_property_including_leasehold_freehold_etc": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "prohibited_properties_details": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "legal_opinion": {
-    "total_attempts": 1,
-    "successes": 1,
+    "total_attempts": 2,
+    "successes": 2,
     "failures": 0,
     "validation_errors": 0,
     "average_confidence": 0.99
   },
   "mortgage_details": {
-    "total_attempts": 1,
-    "successes": 1,
+    "total_attempts": 2,
+    "successes": 2,
     "failures": 0,
     "validation_errors": 0,
     "average_confidence": 0.99
   },
   "ftl_buffer_zone": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "location_of_property": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "plot_no_survey_no": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "plot_no": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "t_s_no_village": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "ward_taluka": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "mandal_district": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "layout_approval": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "layout_approving_authority": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "genuineness_of_plan": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "any_other_comments_by_our_empanelled_values_on_authentic_of_approved_plan": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "postal_address_of_the_property": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "city_town": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "property_classification": {
-    "total_attempts": 1,
-    "successes": 1,
+    "total_attempts": 2,
+    "successes": 2,
     "failures": 0,
     "validation_errors": 0,
     "average_confidence": 0.85
   },
   "industrial_area": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "coming_under_municipality_limits_village_panchayat_corporation": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "whether_covered_under_any_state_central_govt_enactments_e_g_urban_land_ceiling_act_or_notified_under_agency_area_scheduled_area_cantonment_area": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "boundaries_of_the_flat": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "boundaries_north": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "boundaries_south": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "boundaries_east": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
   },
   "boundaries_west": {
-    "total_attempts": 1,
+    "total_attempts": 2,
     "successes": 0,
-    "failures": 1,
+    "failures": 2,
     "validation_errors": 0,
     "average_confidence": 0.0
+  },
+  "electric_meter_number": {
+    "total_attempts": 46,
+    "successes": 46,
+    "failures": 0,
+    "validation_errors": 0,
+    "average_confidence": 0.9699999999999993
+  },
+  "transformer_id": {
+    "total_attempts": 21,
+    "successes": 21,
+    "failures": 0,
+    "validation_errors": 0,
+    "average_confidence": 0.9699999999999999
+  },
+  "owner_name": {
+    "total_attempts": 46,
+    "successes": 26,
+    "failures": 20,
+    "validation_errors": 0,
+    "average_confidence": 0.5022405413613802
+  },
+  "factory_license_number": {
+    "total_attempts": 12,
+    "successes": 12,
+    "failures": 0,
+    "validation_errors": 0,
+    "average_confidence": 0.9700000000000001
+  },
+  "transformer_number": {
+    "total_attempts": 12,
+    "successes": 12,
+    "failures": 0,
+    "validation_errors": 0,
+    "average_confidence": 0.9700000000000001
+  },
+  "consumer_id": {
+    "total_attempts": 12,
+    "successes": 12,
+    "failures": 0,
+    "validation_errors": 0,
+    "average_confidence": 0.9700000000000001
+  },
+  "survey_number": {
+    "total_attempts": 12,
+    "successes": 4,
+    "failures": 8,
+    "validation_errors": 0,
+    "average_confidence": 0.255059041315065
+  },
+  "gst_number": {
+    "total_attempts": 12,
+    "successes": 6,
+    "failures": 6,
+    "validation_errors": 0,
+    "average_confidence": 0.34077168139078284
+  },
+  "village": {
+    "total_attempts": 12,
+    "successes": 1,
+    "failures": 11,
+    "validation_errors": 0,
+    "average_confidence": 0.047913361881293505
   }
 }
