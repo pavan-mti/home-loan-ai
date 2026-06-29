@@ -159,10 +159,29 @@ class HeaderTemplate(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     header_name: Mapped[str] = mapped_column(String(255), nullable=False)
     image_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    image_width: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    image_height: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    display_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    is_default: Mapped[bool] = mapped_column(default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     created_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "header_name": self.header_name,
+            "image_path": self.image_path,
+            "image_width": self.image_width,
+            "image_height": self.image_height,
+            "display_order": self.display_order,
+            "is_active": self.is_active,
+            "is_default": self.is_default,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
 
 
 class CompletionCertificateTemplate(Base):

@@ -443,7 +443,7 @@ FIELD_LABELS = {
         "Cell Number", "Contact Number", "Tel No", "Telephone No",
         "Ph No", "Mob No", "Contact", "Mobile / Phone",
         "Cell:", "Cell No:", "Cell No.",
-        "Cell: 8008806408",  # OCR may pick up value inline
+        # OCR may pick up value inline
     ],
 
     "residential_address": [
@@ -470,9 +470,8 @@ FIELD_LABELS = {
         "Survy No", "Survey N0",
         # AOS-specific
         "Survey Nos.", "Survey Nos", "in Survey Nos.",
-        "Survey Nos. 90", "Sy Nos", "Survey No 90",
-        "Survey No. 90", "Survey Nos.90",
-        "90/ఄ", "92/ఄ",  # Telugu script survey numbers
+        "Sy Nos", 
+        # Telugu script survey numbers
     ],
 
     "plot_no": [
@@ -485,8 +484,7 @@ FIELD_LABELS = {
         "Bhukhand Sankhya", "Khasra Plot No",
         "Plt No", "Plto No", "Door Noo", "H No", "H. No",
         # AOS-specific
-        "Door No.17-3-131", "Door No.17-3-131/B",
-        "Door No 17-3-131", "Premises bearing Door No",
+        "Premises bearing Door No",
         "Municipal Premises Door No", "Municipal Premises",
         "Premises Door No", "Door No (Old)", "Door No (New)",
         "Old PTIN", "New PTIN",
@@ -495,10 +493,9 @@ FIELD_LABELS = {
     "ptin_no": [
         "PTIN No", "PTIN", "PTIN Number", "Property Tax ID",
         "Property Tax Identification No", "Tax ID No",
-        "GHMC PTIN", "Municipal PTIN", "Patta No",
+        "Municipal PTIN", "Patta No",
         # AOS-specific
         "PTIN No.", "PTIN:", "PTIN No:",
-        "PTIN: 1220310604", "PTIN: 1221700489",
         "PTIN (Old)", "PTIN (New)", "Old PTIN", "New PTIN",
     ],
 
@@ -511,7 +508,6 @@ FIELD_LABELS = {
         "Town Survey No", "Municipal Survey No",
         "T.S No", "T.S.No", "TS. No",
         # AOS-specific
-        "situated at", "Situated at", "situated at BANDLAGUDA",
         "Location", "Place", "Locality Name",
     ],
 
@@ -523,8 +519,6 @@ FIELD_LABELS = {
         "Municipal Ward", "Corporation Ward",
         "Wrd / Taluka", "Ward / Taluk",
         # AOS-specific
-        "under GHMC", "GHMC", "GHMC Ramachandrapuram",
-        "under GHMC Ramachandrapuram",
     ],
 
     "mandal_district": [
@@ -535,10 +529,8 @@ FIELD_LABELS = {
         "Tehsil / District", "Block / District",
         "Mandal / Dist", "Mandal-District",
         # AOS-specific
-        "Sanga Reddy District", "Sangareddy District",
-        "Sangareddy Dt", "Sangareddy", "Sanga Reddy",
         "K.V.Rangareddy District", "Rangareddy District",
-        "Rangareddy Dt", "Medak", "Medak TG",
+        "Rangareddy Dt", 
     ],
 
     "city_town": [
@@ -549,9 +541,6 @@ FIELD_LABELS = {
         "City Name", "Town Name", "Locality",
         "Cty / Town", "Cit / Town",
         # AOS-specific
-        "Hyderabad", "Bandlaguda", "BANDLAGUDA",
-        "Narsingi", "Puppalaguda", "Patancheru",
-        "Kokapet", "Goshala",
     ],
 
     "postal_address_of_the_property": [
@@ -559,16 +548,14 @@ FIELD_LABELS = {
         "Address of Property", "Address of the Property",
         "Site Address", "Flat Address", "House Address",
         "Location Address", "Property Location",
-        "Registered Address", "Situated At",
+        "Registered Address", 
         "Postal Address", "Full Address",
         "Complete Address", "Asset Address",
         "Sampatti Ka Pata", "Postal Adress",
         "Proprty Address", "Addres of Property",
         # AOS-specific
-        "situated at BANDLAGUDA", "Premises bearing",
+        "Premises bearing",
         "in Premises bearing", "in Survey Nos.",
-        "under GHMC Ramachandrapuram",
-        "Sanga Reddy District, Telangana State",
         "Telangana State", "Telangana",
     ],
 
@@ -579,8 +566,6 @@ FIELD_LABELS = {
         "Flat No (West)", "Flat No (North)", "Flat No (South)",
         # AOS-specific
         "Semi-Finished Flat No.", "Semi-Finished Flat No",
-        "Flat No.502", "Flat No.502(EAST)", "Flat 502",
-        "Flat No 502", "Unit 502", "Flat No.502 (EAST)",
         "Semi-Finished Flat", "Flat No(East)", "Flat No(West)",
     ],
 
@@ -590,9 +575,7 @@ FIELD_LABELS = {
         "Society Name", "Colony Name", "Layout Name",
         "Housing Project", "Scheme Name", "Tower Name",
         # AOS-specific
-        "GBR Barcelona", "\"GBR Barcelona\"",
-        "building names as", "building named as",
-        "the building names as", "Residential Complex",
+        "Residential Complex",
         "Name of Complex", "Project",
     ],
 
@@ -649,7 +632,7 @@ FIELD_LABELS = {
         "Uttar", "Uttari Seema", "Nroth", "Norht",
         "NORTH :", "NORTH:", "North :",
         # AOS-specific
-        "Gayam Motor Works Pvt Ltd",  # the value, often parsed with key
+        # the value, often parsed with key
         "Corridor.",  # flat north boundary value
     ],
 
@@ -661,7 +644,7 @@ FIELD_LABELS = {
         "Dakshin", "Dakshini Seema", "Soth", "Souht",
         "SOUTH :", "SOUTH:", "South :",
         # AOS-specific
-        "Limitless Synergy Pvt Ltd",  # south boundary value
+        # south boundary value
         "Open To Sky.",  # flat south boundary value
     ],
 
@@ -673,7 +656,7 @@ FIELD_LABELS = {
         "Purv", "Purvi Seema", "Esst", "Eatst",
         "EAST :", "EAST:", "East :",
         # AOS-specific
-        "30 Feet Wide Road",  # east boundary value (open plot)
+        # east boundary value (open plot)
         "Corridor & Staircase",  # east boundary value (flat)
     ],
 
@@ -685,7 +668,7 @@ FIELD_LABELS = {
         "Paschim", "Pashchimi Seema", "Wets", "Weest",
         "WEST :", "WEST:", "West :",
         # AOS-specific
-        "Sy No. 83 & 84", "Sy No 83 & 84",  # west boundary value
+        # west boundary value
         "Duct & Lift",  # flat west boundary value
     ],
 
@@ -739,10 +722,8 @@ FIELD_LABELS = {
         "Agreement Dated", "Date:", "Dated:",
         "Made on", "Executed on", "Entered into on",
         # AOS-specific
-        "made and executed on this", "executed on",
-        "on this 17th day of Feb 2026",
-        "on this", "Date: 17-02-2026", "Date: 17/02/2026",
-        "FEB-17-2026", "17-02-2026", "17/02/2026",
+        "executed on",
+        "on this", 
         "Agreement dated:", "Agreement dated",
     ],
 
@@ -770,8 +751,7 @@ FIELD_LABELS = {
         "Registered On", "Reg Date", "Date of Reg",
         "Date Registered", "Doc Date",
         # AOS-specific
-        "dated", "Dated:", "Dated :", "dated 14-03-2023",
-        "dated: 14.03.2023", "registered at", "Registered at",
+        "dated", "Dated:", "Dated :", 
     ],
 
     "sale_deed_date": [
@@ -780,7 +760,6 @@ FIELD_LABELS = {
         "Date of Acquisition", "Acquired On",
         # AOS-specific
         "vide document no.", "vide document no",
-        "dated 14-03-2023", "dated: 14.03.2023",
     ],
 
     "possession_date": [
@@ -788,7 +767,6 @@ FIELD_LABELS = {
         "Handover Date", "Date of Handover",
         "Date of Delivery", "Delivery Date",
         # AOS-specific
-        "within 1 to 6 months", "within 1 to 6 months of",
         "handed over within", "Flat will be handed over",
     ],
 
@@ -796,7 +774,6 @@ FIELD_LABELS = {
         "Work Order Date", "Date of Work Order",
         "WO Date", "Work Order Dated",
         "Work Order Agreement Date",
-        "made and executed on 17/02/2026",
         "in terms of Work Order dated",
         "Work Order dated:", "WO dated",
     ],
@@ -814,12 +791,10 @@ FIELD_LABELS = {
         "Nirman Kshetrafal", "Nirman Area",
         "Bult Up Area", "Buit Up Area", "Bulit Up Area",
         # AOS-specific
-        "admeasuring 1130 sq. feet", "1130 sq. feet",
         "admeasuring", "sq. feet of built up area",
         "built up area (including common areas, balconies)",
         "including common areas, balconies",
         "sq feet of built up area",
-        "admeasuring 1130", "1130 sq ft",
     ],
 
     "land_area": [
@@ -837,10 +812,6 @@ FIELD_LABELS = {
         "Bhumi Kshetrafal", "Zameen Ka Rukba",
         "Lnd Area", "Lad Area",
         # AOS-specific
-        "790 sq. yards", "790 Square yards",
-        "admeasuring area 790 sq. yards",
-        "660.44 Sq Mtrs", "660.44 Sq. Mtrs",
-        "total extent of admeasuring 790",
         "out of total extent of admeasuring",
         "total extent", "Extent",
     ],
@@ -854,10 +825,6 @@ FIELD_LABELS = {
         "UDS in Sq Mtrs",
         # AOS-specific
         "undivided share of land admeasuring",
-        "undivided share of land admeasuring 42.61 sq. yards",
-        "42.61 sq. yards", "42.61 sq yards",
-        "equivalent to 35.627 Sq. meters",
-        "35.627 Sq. meters", "35.627 Sq Mtrs",
         "undivided share of land",
         "along with an undivided share of land",
     ],
@@ -905,12 +872,7 @@ FIELD_LABELS = {
         "Vikray Mulya", "Keemat",
         "Ttal Sale Consideration", "Sale Consiedration",
         # AOS-specific
-        "total sale consideration of Rs.",
-        "Rs. 28,25,000/-", "28,25,000/-",
-        "Rupees Twenty-Eight Lakh Twenty-Five Only",
-        "Rs.28,25,000/-",
         "total sale consideration",
-        "for a total sale consideration of",
     ],
 
     "advance_amount": [
@@ -922,8 +884,6 @@ FIELD_LABELS = {
         "Advance Paid", "Amount Paid",
         "Peshgi", "Bayana", "Advance Sum",
         # AOS-specific
-        "Rs. 2,82,500/-", "2,82,500/-",
-        "Rupees Two Lakh Eighty-Two Thousand Five Hundred",
         "advance by way of online Transfer",
         "paid a sum of", "sum of Rs.",
         "Towards advance", "towards advance",
@@ -938,8 +898,6 @@ FIELD_LABELS = {
         "Due Amount", "Pending Amount",
         "Shesh Rakam", "Baaki Rakam",
         # AOS-specific
-        "Rs. 25,42,500/-", "25,42,500/-",
-        "Rupees Twenty-Five Lakh Forty-Two Thousand Five Hundred Only",
         "remaining balance of Rs.",
         "balance sale consideration",
         "subjected to Loan", "will be subjected to Loan",
@@ -999,11 +957,9 @@ FIELD_LABELS = {
         "Total", "Total Amount",
         "TOTAL", "Total Value",
         # AOS/WO-specific
-        "Rs. 28,25,000/-", "28,25,000/-",
-        "Rupees Twenty-Eight Lakh Twenty-Five Thousand Only",
         "above works to the tune of Rs.",
         "tune of Rs.", "VALUE", "Item Value",
-        "3,00,000", "3,50,000",  # individual work order line values
+        # individual work order line values
     ],
 
     "stamp_duty_value": [
@@ -1011,10 +967,8 @@ FIELD_LABELS = {
         "Stamp Duty Paid", "Registration Charges",
         "Stamp Duty & Registration", "SD Value",
         # AOS-specific (stamp paper)
-        "₹ 0000200/-", "0000200/-",
-        "ZERO ZERO ZERO ZERO TWO ZERO ZERO",
         "Stamp Paper Value", "Non-Judicial Stamp",
-        "India Non Judicial", "STATE BANK OF INDIA",
+        "India Non Judicial", 
     ],
 
     # ─── LEGAL / DOCUMENT DETAILS ─────────────────────────────────────────────
@@ -1026,13 +980,9 @@ FIELD_LABELS = {
         "Document Bearing No", "Document No.",
         "Dastavez Sankhya",
         # AOS-specific
-        "document bearing No.7085 of 2024",
-        "document bearing No.8610 of 2023",
-        "No. 8610 of 2023", "No. 7085 of 2024",
-        "document no. 8610-2023", "vide document no.",
+        "vide document no.",
         "document bearing No", "document no",
         "File No.", "File No",
-        "3816242", "48/2023",
     ],
 
     "book_no": [
@@ -1045,16 +995,10 @@ FIELD_LABELS = {
     ],
 
     "registered_at": [
-        "Registered At", "Registered At RO",
         "Registration Office", "Sub Registrar Office",
         "SRO", "Registrar Office", "R.O.",
         "Office of Sub-Registrar", "Panjiyan Karyalay",
         # AOS-specific
-        "registered at R.O Sangareddy",
-        "registered at RO Sanga Reddy",
-        "registered at RO Sangareddy",
-        "R.O Sangareddy", "R.O. Sangareddy",
-        "RO Sangareddy", "Sanga Reddy R.O.",
     ],
 
     "sale_deed_no": [
@@ -1063,9 +1007,6 @@ FIELD_LABELS = {
         "Document No of Sale Deed",
         "Vikray Patra Sankhya",
         # AOS-specific
-        "8610 of 2023", "No. 8610 of 2023",
-        "vide document bearing No. 8610 of 2023",
-        "Sale Deed vide document no. 8610-2023",
         "registered Sale Deed vide document no.",
     ],
 
@@ -1077,8 +1018,7 @@ FIELD_LABELS = {
         # AOS-specific
         "Development Agreement cum General Power of Attorney",
         "DA cum GPA", "vide registered Development Agreement",
-        "document bearing No.7085 of 2024",
-        "7085 of 2024", "DA-GPA",
+        "DA-GPA",
         "Development Agreement cum General Power of Attorney document bearing No.",
     ],
 
@@ -1087,17 +1027,10 @@ FIELD_LABELS = {
         "Construction Permission", "BP No",
         "Building Permit No", "Plan No",
         "Permit No", "Permission No",
-        "File No", "GHMC File No",
+        "File No", 
         "BP File No", "Permit Number",
         # AOS-specific
-        "File No. 012383/GHMC/6103/SLP2/2023-BP",
-        "012383/GHMC/6103/SLP2/2023-BP",
-        "permit No. 5741/GHMC/SLP/2024-BP",
-        "5741/GHMC/SLP/2024-BP",
-        "dt. 04-03-2024",
-        "building permission from the Greater Hyderabad Municipal Corporation",
         "obtained building permission",
-        "GHMC building permission",
     ],
 
     "layout_approval": [
@@ -1115,13 +1048,10 @@ FIELD_LABELS = {
         "Layout Issuing Authority",
         "Plan Sanctioning Authority",
         "Sanctioned By", "Approved By",
-        "GHMC", "HMDA", "DTCP", "BDA", "CMDA",
+        "HMDA", "DTCP", "BDA", "CMDA",
         "Municipality", "Gram Panchayat",
         "Planning Authority", "Development Authority",
         # AOS-specific
-        "Greater Hyderabad Municipal Corporation",
-        "GHMC Ramachandrapuram",
-        "obtained construction permission from GHMC Ramachandrapuram",
     ],
 
     "mortgage_details": [
@@ -1184,7 +1114,7 @@ FIELD_LABELS = {
         "Schedule of Property is not subject matter of any kind of prohibition",
         "not subject matter of any kind of prohibition",
         "prohibition of Transfer of properties",
-        "Act 9 of 1977", "prohibition",
+        "prohibition",
     ],
 
     # ─── PROPERTY CHARACTERISTICS ─────────────────────────────────────────────
@@ -1262,10 +1192,9 @@ FIELD_LABELS = {
         "Road Access", "Approach Road",
         "Road Size", "Road Frontage",
         "Feet Wide Road", "Meter Wide Road",
-        "30 Feet Wide Road", "40 Feet Wide Road",
         # AOS-specific
-        "30 Feet Wide Road",  # east boundary value
-        "30 Feet Wide", "30ft Road",
+        # east boundary value
+        "30ft Road",
     ],
 
     # ─── VALUATION SPECIFICS ──────────────────────────────────────────────────
@@ -1326,9 +1255,6 @@ FIELD_LABELS = {
         "Rate", "Total Value", "VALUE",
         "Item Amount",
         # WO-specific
-        "3,00,000", "3,50,000", "2,50,000",
-        "1,50,000", "2,25,000", "1,00,000",
-        "2,00,000",
     ],
 
     "serial_no": [
@@ -1343,7 +1269,6 @@ FIELD_LABELS = {
         "Flooring", "Floor Work", "Floor Finishing",
         "Tiles", "Marble", "Granite Flooring",
         "Floor Type",
-        "Flooring - 3,00,000",
     ],
 
     "wall_finishing": [
@@ -1358,7 +1283,6 @@ FIELD_LABELS = {
     "painting": [
         "Painting", "Paint Work", "Interior Painting",
         "Exterior Painting", "Paint",
-        "Painting - 3,50,000",
     ],
 
     "doors_windows": [
@@ -1381,7 +1305,6 @@ FIELD_LABELS = {
     "kitchen_platform": [
         "Kitchen Platform", "Kitchen Counter",
         "Kitchen Work", "Modular Kitchen",
-        "Kitchen Platform - 1,50,000",
     ],
 
     "pop_ceiling": [
@@ -1396,14 +1319,12 @@ FIELD_LABELS = {
         "UPVC Windows and Sliding Doors",
         "UPVC Windows", "UPVC", "Sliding Doors",
         "Aluminum Windows", "Window Frames",
-        "UPVC Windows and Sliding Doors - 2,25,000",
     ],
 
     "electrical_works": [
         "Electrical Works", "Electrical Work",
         "Wiring", "Electrical Fitting",
         "Electrical Installation", "Electrification",
-        "Electrical Works - 2,50,000",
     ],
 
     "electrical_piping": [
@@ -1411,7 +1332,6 @@ FIELD_LABELS = {
         "Electrical Piping & Wiring",
         "Electrical Piping", "Piping",
         "Conduit Work", "Electrical Conduit",
-        "Electrical Piping & Wring - 1,00,000",
     ],
 
     "sanitary_fittings": [
@@ -1420,20 +1340,17 @@ FIELD_LABELS = {
         "Sanitary Work", "Plumbing Work",
         "Sanitation", "Water Fittings",
         "Quality Sanitary Fittings",
-        "Sanitary - 2,00,000",
     ],
 
     "pooja_room": [
         "Pooja Room Area", "Pooja Room",
         "Prayer Room", "Puja Ghar",
-        "Pooja Room Area - 1,00,000",
     ],
 
     "bathroom_fittings": [
         "Bathroom Fittings", "Bath Fittings",
         "WC Fittings", "Toilet Fittings",
         "Bathroom Accessories",
-        "Bathroom Fittings - 1,00,000",
     ],
 
     # ─── BANK / LOAN DETAILS ─────────────────────────────────────────────────
@@ -1442,13 +1359,10 @@ FIELD_LABELS = {
         "Financial Institution", "FI Name",
         "Housing Finance Company", "HFC",
         "NBFC Name", "Lending Institution",
-        "Bank / FI", "State Bank of India", "SBI",
+        "Bank / FI", "SBI",
         # AOS/WO-specific
-        "The Manager, State Bank of India, Hyderabad",
-        "State Bank of India, Hyderabad",
-        "SBI Hyderabad", "FI/Bank",
+        "FI/Bank",
         "loan amount from FI/Bank",
-        "To The Manager, State Bank of India",
     ],
 
     "branch_name": [
@@ -1456,8 +1370,6 @@ FIELD_LABELS = {
         "Branch Office", "Branch Location",
         "Branch Code",
         # AOS/WO-specific
-        "State Bank of India, Hyderabad",
-        "Hyderabad Branch",
     ],
 
     "loan_account_no": [
@@ -1494,7 +1406,6 @@ FIELD_LABELS = {
         "ZIP Code", "PIN", "Pincode",
         "Area Code", "Postal PIN",
         # AOS-specific
-        "500089", "502305", "502319", "507209",
     ],
 
     "locality": [
@@ -1503,18 +1414,15 @@ FIELD_LABELS = {
         "Layout", "Sector", "Phase",
         "Mohalla", "Basti",
         # AOS-specific
-        "Goutham Nagar Colony", "Narsingi",
-        "Puppalaguda", "Bandlaguda",
-        "BANDLAGUDA", "Bhanoor Village",
-        "Chinna Korukondi", "Kokapet Road",
-        "Srikirshna Goshala",
+        "Goutham Nagar Colony", 
+        "Bhanoor Village",
+        "Chinna Korukondi", 
     ],
 
     "landmark": [
         "Landmark", "Near", "Opposite to",
         "Adjacent to", "Nearby Landmark",
         # AOS-specific
-        "Srikirshna Goshala", "Kokapet Road",
         "7Hills (Pws)",
     ],
 
@@ -1542,11 +1450,8 @@ FIELD_LABELS = {
     "receipt_amount": [
         "Receipt Amount", "Amount Received",
         "Received Amount", "Amount Acknowledged",
-        "Sum Received", "Received a sum of",
+        "Sum Received", 
         # AOS-specific
-        "Received a sum of Rs. 2,82,500/-",
-        "Rs. 2,82,500/-", "2,82,500/-",
-        "Two Lakh Eighty-Two Thousand Five Hundred",
     ],
 
     # ─── NOC / AGREEMENT TYPES ───────────────────────────────────────────────
@@ -1594,17 +1499,14 @@ FIELD_LABELS = {
         # AOS-specific
         "having purchased the same under registered Sale Deed",
         "purchased the same under registered Sale Deed",
-        "vide document no. 8610-2023",
         "Title to the said property",
     ],
 
     # ─── ADDITIONAL AOS/WO FIELDS ─────────────────────────────────────────────
     "company_registration": [
         "Company Registration", "Registered under the Company's Act",
-        "Company's Act 1956", "Act 1956",
         "Registered Office", "Registration No (Company)",
         "CIN", "Corporate ID",
-        "a company registered under the company's act 1956",
         "company registered under",
         "Registered Office at",
     ],
@@ -1613,8 +1515,6 @@ FIELD_LABELS = {
         "Authorised Signatory", "Authorized Signatory",
         "Rep. by its Manager", "Manager",
         "Representative", "Authorized Representative",
-        "For Limitless Synergy Pvt. Ltd",
-        "For M/s LIMITLESS SYNERGY PVT LTD",
         "Sig. of the First Party", "Sig. of the Second Party",
         "SIG. OF THE FIRST PARTY",
         "SIG. OF THE SECOND PARTY(IES)",
@@ -1623,14 +1523,12 @@ FIELD_LABELS = {
     "stamp_paper_details": [
         "Stamp Paper No", "Stamp Paper Details",
         "Non-Judicial Stamp", "India Non Judicial",
-        "STATE BANK OF INDIA", "RACPC",
+        "RACPC",
         "Phone No:", "Sold To/Issued To:",
         "For Whom/ID Proof:", "Agreement",
         "Stamp Paper", "Non Judicial Stamp Paper",
         "Stamp Value", "Franking",
-        "FEB-17-2026", "13+04:41",
-        "3816242177133348",  # barcode number
-        "48/2023",
+        # barcode number
     ],
 
     "party_role": [
@@ -1675,7 +1573,6 @@ FIELD_LABELS = {
         "Signature", "Sign", "Signed by",
         "VENDOR (signature)", "VENDEE (signature)",
         "Sig. of First Party", "Sig. of Second Party",
-        "For Limitless Synergy Pvt. Ltd",
         "Authorised Signatory",
         "V E N D O R", "V E N D E E",
         "VENDOR.", "VENDEE.",
@@ -1698,10 +1595,8 @@ FIELD_LABELS = {
     "total_plot_extent": [
         "Total Extent", "Total Plot Extent", "Total Site Extent",
         "Total Open Plot Area", "Total Land Extent",
-        "out of total extent of admeasuring 790 Square yards",
         "Total Extent of Plot", "Total extent admeasuring",
-        "Total extent of admeasuring", "790 Square yards",
-        "admeasuring area 790",
+        "Total extent of admeasuring", 
     ],
 
     "property_classification": [
@@ -1712,7 +1607,7 @@ FIELD_LABELS = {
         "Class of Locality", "Locality Class",
         "Shetra Ka Vargikaran",
         "Residential Area", "Commercial Area",
-        "Municipality Limits", "GHMC Limits",
+        "Municipality Limits", 
         "Coming under Municipality Limits",
     ],
 
@@ -1742,7 +1637,7 @@ FIELD_LABELS = {
     "water_supply": [
         "Water Supply", "Water Connection",
         "Water Availability", "Water Source",
-        "GHMC Water", "Bore Well", "Corporation Water",
+        "Bore Well", "Corporation Water",
         "Water Fittings", "Sanitary Fittings",
     ],
 
@@ -1763,7 +1658,7 @@ FIELD_LABELS = {
         "Road Connectivity", "Access Road",
         "Metalled Road", "Tar Road", "CC Road",
         "BT Road", "Kutcha Road",
-        "30 Feet Wide Road", "30ft Road",
+        "30ft Road",
     ],
 
     "gps_coordinates": [
@@ -1818,7 +1713,6 @@ FIELD_LABELS = {
         "Final Valuation", "Grand Total Value",
         "Kul Mulyankan", "Kul Mulya",
         "TOTAL", "Total Amount",
-        "28,25,000/-",
     ],
 
     "genuineness_of_plan": [
@@ -1835,7 +1729,7 @@ FIELD_LABELS = {
         "Agency Area", "Scheduled Area",
         "Cantonment Area", "Notified Area",
         "Government Notifications",
-        "Act 9 of 1977", "prohibition of Transfer",
+        "prohibition of Transfer",
     ],
 
     "ftl_buffer_zone": [
@@ -1868,7 +1762,7 @@ FIELD_LABELS = {
     "revenue_division": [
         "Revenue Division", "Division", "Sub-Division",
         "Revenue Circle", "Circle",
-        "Ramachandrapuram", "GHMC Ramachandrapuram",
+        "Ramachandrapuram", 
     ],
 
     "name_of_applicant": [
@@ -1903,10 +1797,9 @@ FIELD_LABELS = {
         "Coming under Municipality Limits",
         "Municipality Limits", "Corporation Limits",
         "Village Panchayat", "Panchayat Area",
-        "GHMC Limits", "Municipal Corporation",
+        "Municipal Corporation",
         "Gram Panchayat Limits", "Nagar Palika",
         "ULB Limits",
-        "under GHMC", "GHMC Ramachandrapuram",
     ],
 
 }

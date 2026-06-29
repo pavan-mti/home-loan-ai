@@ -386,7 +386,7 @@ class TemplateService:
         return result
 
 
-    def generate_report(self, template_id: int, field_values: dict[str, Any], output_name: str = "valuation_report.docx", header_image_path: Path | None = None) -> Path:
+    def generate_report(self, template_id: int, field_values: dict[str, Any], output_name: str = "valuation_report.docx", header_image_path: Path | None = None, certificate_text: str | None = None) -> Path:
         template = self.repository.get_template(template_id)
         if template is None:
             raise ValueError("Template not found")
@@ -404,7 +404,8 @@ class TemplateService:
             template.template_content_json,
             master_dict,
             output_path,
-            header_image_path=header_image_path
+            header_image_path=header_image_path,
+            certificate_text=certificate_text
         )
 
     def map_saved_fields(self, template_id: int, saved_values: dict[str, Any]) -> dict[str, Any]:

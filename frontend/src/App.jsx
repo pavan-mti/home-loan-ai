@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType } from 'docx'
+import HeaderManagement from './components/HeaderManagement'
+import HeaderSelector from './components/HeaderSelector'
+import CompletionCertificateManagement from './components/CompletionCertificateManagement'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
 
@@ -222,6 +225,8 @@ function App() {
   const [editingHlcId, setEditingHlcId] = useState(null)
   const [editingTemplateId, setEditingTemplateId] = useState(null)
   const [selectedTemplateId, setSelectedTemplateId] = useState(null)
+  const [selectedHeaderId, setSelectedHeaderId] = useState(null)
+  const [activeTemplateSubTab, setActiveTemplateSubTab] = useState('templates') // templates | headers
   
   // Sidebar state
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
@@ -577,7 +582,13 @@ function App() {
       const result = await apiRequest(`/templates/${selectedTemplateId}/generate-report`, {
         method: 'POST',
         token: auth.token,
-        body: fieldValues
+        body: {
+          field_values: fieldValues,
+          rendering_options: {
+            header_id: selectedHeaderId,
+            certificate_enabled: true
+          }
+        }
       })
 
       if (result && result.report_url) {
@@ -1185,7 +1196,41 @@ function App() {
 
           {/* Report Templates Section */}
           {activeSection === 'templates' && (
-            <div className="grid gap-6 xl:grid-cols-[400px_1fr]">
+            <div className="space-y-6">
+              {/* Sub-tab Navigation */}
+              <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveTemplateSubTab('templates')}
+                  className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition ${activeTemplateSubTab === 'templates' ? 'bg-slate-900 text-white shadow-md' : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'}`}
+                >
+                  Bank Templates
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTemplateSubTab('headers')}
+                  className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition flex items-center gap-2 ${activeTemplateSubTab === 'headers' ? 'bg-slate-900 text-white shadow-md' : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'}`}
+                >
+                  <span>Header Management</span>
+                  <span className="w-2 h-2 rounded-full bg-amber-400" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTemplateSubTab('certificates')}
+                  className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition flex items-center gap-2 ${activeTemplateSubTab === 'certificates' ? 'bg-slate-900 text-white shadow-md' : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'}`}
+                >
+                  <span>Completion Certificates</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                </button>
+              </div>
+
+              {activeTemplateSubTab === 'headers' ? (
+                <HeaderManagement apiRequest={apiRequest} token={auth.token} showToast={showToast} />
+              ) : activeTemplateSubTab === 'certificates' ? (
+                <CompletionCertificateManagement apiRequest={apiRequest} token={auth.token} showToast={showToast} />
+              ) : (
+                <div className="grid gap-6 xl:grid-cols-[400px_1fr]">
+
               {/* Add/Edit Template Form & Detected Fields */}
               <div className="flex flex-col gap-6 h-fit">
                 <div className="panel p-6">
@@ -1421,9 +1466,11 @@ function App() {
                     </div>
                   )}
                 </div>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
+        )}
 
           {/* OCR Permission and Extraction Section */}
           {activeSection === 'permission' && (
@@ -1836,6 +1883,15 @@ function App() {
                       </span>
                     )}
                   </div>
+
+                  <HeaderSelector
+                    apiRequest={apiRequest}
+                    token={auth.token}
+                    selectedHeaderId={selectedHeaderId}
+                    setSelectedHeaderId={setSelectedHeaderId}
+                    showToast={showToast}
+                  />
+
                   <div className="flex gap-4 justify-center pt-4">
                     <button
                       className="btn-secondary"

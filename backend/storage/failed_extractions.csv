@@ -118,3 +118,370 @@ timestamp,field_code,extracted_value,confidence,reason
 2026-06-26T12:29:38.156177,survey_number,,0.00,empty_value
 2026-06-26T12:29:38.204033,gst_number,,0.00,empty_value
 2026-06-26T12:29:38.227163,village,,0.00,empty_value
+2026-06-26T13:26:16.992124,inspection_date,17-02-2026,0.70,low_confidence
+2026-06-26T13:26:17.000127,valuation_date,17-02-2026,0.70,low_confidence
+2026-06-26T13:26:17.034125,brief_description_of_the_property_including_leasehold_freehold_etc,,0.00,empty_value
+2026-06-26T13:26:17.069337,ftl_buffer_zone,"company's act 1956 having its registered office at SURVEY NO 77,BHANOOR",0.85,low_confidence
+2026-06-26T13:26:17.077242,location_of_property,,0.00,empty_value
+2026-06-26T13:26:17.083966,plot_no_survey_no,1956,0.80,low_confidence
+2026-06-26T13:26:17.157532,genuineness_of_plan,,0.00,empty_value
+2026-06-26T13:26:17.171548,any_other_comments_by_our_empanelled_values_on_authentic_of_approved_plan,,0.00,empty_value
+2026-06-26T13:26:17.200065,property_classification,"Complex by Name ""GBR Barcelona.""",0.85,low_confidence
+2026-06-26T13:26:17.207306,industrial_area,(including,0.71,low_confidence
+2026-06-26T13:26:17.213304,property_classification,"Complex by Name ""GBR Barcelona.""",0.85,low_confidence
+2026-06-26T13:26:17.228737,property_classification,"Complex by Name ""GBR Barcelona.""",0.85,low_confidence
+2026-06-26T13:26:17.237736,property_classification,"Complex by Name ""GBR Barcelona.""",0.85,low_confidence
+2026-06-26T13:26:17.253736,coming_under_municipality_limits_village_panchayat_corporation,"act 1956 having its registered office at SURVEY NO 77,BHANOOR VILLAGE",0.80,low_confidence
+2026-06-26T13:26:17.271742,boundaries_of_the_flat,502 in the,0.89,low_confidence
+2026-06-26T16:07:30.201737,inspection_date,17-02-2026,0.70,low_confidence
+2026-06-26T16:07:30.225736,valuation_date,17-02-2026,0.70,low_confidence
+2026-06-26T16:07:30.298397,brief_description_of_the_property_including_leasehold_freehold_etc,,0.00,empty_value
+2026-06-26T16:07:30.346487,ftl_buffer_zone,"company's act 1956 having its registered office at SURVEY NO 77,BHANOOR",0.85,low_confidence
+2026-06-26T16:07:30.359911,location_of_property,,0.00,empty_value
+2026-06-26T16:07:30.374199,plot_no_survey_no,1956,0.80,low_confidence
+2026-06-26T16:07:30.428913,genuineness_of_plan,,0.00,empty_value
+2026-06-26T16:07:30.437913,any_other_comments_by_our_empanelled_values_on_authentic_of_approved_plan,,0.00,empty_value
+2026-06-26T16:07:30.459913,property_classification,"Complex by Name ""GBR Barcelona.""",0.85,low_confidence
+2026-06-26T16:07:30.473918,industrial_area,(including,0.71,low_confidence
+2026-06-26T16:07:30.489039,property_classification,"Complex by Name ""GBR Barcelona.""",0.85,low_confidence
+2026-06-26T16:07:30.505054,property_classification,"Complex by Name ""GBR Barcelona.""",0.85,low_confidence
+2026-06-26T16:07:30.520975,property_classification,"Complex by Name ""GBR Barcelona.""",0.85,low_confidence
+2026-06-26T16:07:30.529031,coming_under_municipality_limits_village_panchayat_corporation,"act 1956 having its registered office at SURVEY NO 77,BHANOOR VILLAGE",0.80,low_confidence
+2026-06-26T16:07:30.564978,boundaries_of_the_flat,502 in the,0.89,low_confidence
+2026-06-26T16:32:11.943331,owner_name,,0.00,empty_value
+2026-06-26T16:32:12.079261,survey_number,,0.00,empty_value
+2026-06-26T16:32:12.119726,gst_number,,0.00,empty_value
+2026-06-26T16:32:12.142711,village,,0.00,empty_value
+2026-06-26T16:43:35.362790,owner_name,,0.00,empty_value
+2026-06-26T16:43:35.474720,survey_number,,0.00,empty_value
+2026-06-26T16:43:35.504715,gst_number,,0.00,empty_value
+2026-06-26T16:43:35.512615,village,,0.00,empty_value
+2026-06-26T16:48:44.934548,owner_name,,0.00,empty_value
+2026-06-26T16:48:45.034968,survey_number,,0.00,empty_value
+2026-06-26T16:48:45.059078,gst_number,,0.00,empty_value
+2026-06-26T16:48:45.075084,village,,0.00,empty_value
+2026-06-26T16:49:51.406663,mortgage_details,No prior mortgage or charge exists. Clear for financing.,0.80,low_confidence
+2026-06-26T16:49:51.421126,ftl_buffer_zone,,0.00,empty_value
+2026-06-26T16:49:51.436054,location_of_property,,0.00,empty_value
+2026-06-26T16:49:51.451967,plot_no_survey_no,17-3-131/B,0.80,low_confidence
+2026-06-26T16:49:51.516807,layout_approval,,0.00,empty_value
+2026-06-26T16:49:51.541578,genuineness_of_plan,,0.00,empty_value
+2026-06-26T16:49:51.556581,any_other_comments_by_our_empanelled_values_on_authentic_of_approved_plan,,0.00,empty_value
+2026-06-26T16:49:51.597293,property_classification,(including,0.68,low_confidence
+2026-06-26T16:49:51.613404,property_classification,(including,0.69,low_confidence
+2026-06-26T16:49:51.628657,industrial_area,(including,0.69,low_confidence
+2026-06-26T16:49:51.643175,property_classification,,0.00,empty_value
+2026-06-26T16:49:51.658176,property_classification,,0.00,empty_value
+2026-06-26T16:49:51.673555,property_classification,,0.00,empty_value
+2026-06-26T16:49:51.684735,coming_under_municipality_limits_village_panchayat_corporation,VILLAGE,0.80,low_confidence
+2026-06-26T16:49:51.698401,whether_covered_under_any_state_central_govt_enactments_e_g_urban_land_ceiling_act_or_notified_under_agency_area_scheduled_area_cantonment_area,,0.00,empty_value
+2026-06-26T16:49:51.713537,boundaries_of_the_flat,502 in 5th Floor of,0.89,low_confidence
+2026-06-26T16:53:04.591429,owner_name,,0.00,empty_value
+2026-06-26T16:53:04.702941,survey_number,,0.00,empty_value
+2026-06-26T16:53:04.731044,gst_number,,0.00,empty_value
+2026-06-26T16:53:04.739392,village,,0.00,empty_value
+2026-06-26T16:53:33.645434,mortgage_details,No prior mortgage or charge exists. Clear for financing.,0.80,low_confidence
+2026-06-26T16:53:33.660501,ftl_buffer_zone,,0.00,empty_value
+2026-06-26T16:53:33.674631,location_of_property,,0.00,empty_value
+2026-06-26T16:53:33.684539,plot_no_survey_no,17-3-131/B,0.80,low_confidence
+2026-06-26T16:53:33.736858,layout_approval,,0.00,empty_value
+2026-06-26T16:53:33.768478,genuineness_of_plan,,0.00,empty_value
+2026-06-26T16:53:33.784646,any_other_comments_by_our_empanelled_values_on_authentic_of_approved_plan,,0.00,empty_value
+2026-06-26T16:53:33.834062,property_classification,(including,0.68,low_confidence
+2026-06-26T16:53:33.850162,property_classification,(including,0.69,low_confidence
+2026-06-26T16:53:33.861160,industrial_area,(including,0.69,low_confidence
+2026-06-26T16:53:33.876282,property_classification,,0.00,empty_value
+2026-06-26T16:53:33.883277,property_classification,,0.00,empty_value
+2026-06-26T16:53:33.896999,property_classification,,0.00,empty_value
+2026-06-26T16:53:33.910858,coming_under_municipality_limits_village_panchayat_corporation,VILLAGE,0.80,low_confidence
+2026-06-26T16:53:33.925824,whether_covered_under_any_state_central_govt_enactments_e_g_urban_land_ceiling_act_or_notified_under_agency_area_scheduled_area_cantonment_area,,0.00,empty_value
+2026-06-26T16:53:33.941412,boundaries_of_the_flat,502 in 5th Floor of,0.89,low_confidence
+2026-06-26T16:59:11.090788,mortgage_details,No prior mortgage or charge exists. Clear for financing.,0.80,low_confidence
+2026-06-26T16:59:11.106930,ftl_buffer_zone,,0.00,empty_value
+2026-06-26T16:59:11.123117,location_of_property,,0.00,empty_value
+2026-06-26T16:59:11.139252,plot_no_survey_no,17-3-131/B,0.80,low_confidence
+2026-06-26T16:59:11.199073,layout_approval,,0.00,empty_value
+2026-06-26T16:59:11.231515,genuineness_of_plan,,0.00,empty_value
+2026-06-26T16:59:11.239515,any_other_comments_by_our_empanelled_values_on_authentic_of_approved_plan,,0.00,empty_value
+2026-06-26T16:59:11.296022,property_classification,(including,0.68,low_confidence
+2026-06-26T16:59:11.310729,property_classification,(including,0.69,low_confidence
+2026-06-26T16:59:11.325737,industrial_area,(including,0.69,low_confidence
+2026-06-26T16:59:11.341401,property_classification,,0.00,empty_value
+2026-06-26T16:59:11.352428,property_classification,,0.00,empty_value
+2026-06-26T16:59:11.365944,property_classification,,0.00,empty_value
+2026-06-26T16:59:11.381103,coming_under_municipality_limits_village_panchayat_corporation,VILLAGE,0.80,low_confidence
+2026-06-26T16:59:11.396112,whether_covered_under_any_state_central_govt_enactments_e_g_urban_land_ceiling_act_or_notified_under_agency_area_scheduled_area_cantonment_area,,0.00,empty_value
+2026-06-26T16:59:11.409207,boundaries_of_the_flat,502 in 5th Floor of,0.89,low_confidence
+2026-06-26T17:00:49.639226,mortgage_details,No prior mortgage or charge exists. Clear for financing.,0.80,low_confidence
+2026-06-26T17:00:49.653234,ftl_buffer_zone,,0.00,empty_value
+2026-06-26T17:00:49.662243,location_of_property,,0.00,empty_value
+2026-06-26T17:00:49.669335,plot_no_survey_no,17-3-131/B,0.80,low_confidence
+2026-06-26T17:00:49.740137,layout_approval,,0.00,empty_value
+2026-06-26T17:00:49.760427,genuineness_of_plan,,0.00,empty_value
+2026-06-26T17:00:49.775512,any_other_comments_by_our_empanelled_values_on_authentic_of_approved_plan,,0.00,empty_value
+2026-06-26T17:00:49.808750,property_classification,(including,0.68,low_confidence
+2026-06-26T17:00:49.824299,property_classification,(including,0.69,low_confidence
+2026-06-26T17:00:49.841292,industrial_area,(including,0.69,low_confidence
+2026-06-26T17:00:49.857366,property_classification,,0.00,empty_value
+2026-06-26T17:00:49.872078,property_classification,,0.00,empty_value
+2026-06-26T17:00:49.883592,property_classification,,0.00,empty_value
+2026-06-26T17:00:49.899703,coming_under_municipality_limits_village_panchayat_corporation,VILLAGE,0.80,low_confidence
+2026-06-26T17:00:49.916299,whether_covered_under_any_state_central_govt_enactments_e_g_urban_land_ceiling_act_or_notified_under_agency_area_scheduled_area_cantonment_area,,0.00,empty_value
+2026-06-26T17:00:49.932391,boundaries_of_the_flat,502 in 5th Floor of,0.89,low_confidence
+2026-06-26T17:03:07.028459,mortgage_details,No prior mortgage or charge exists. Clear for financing.,0.80,low_confidence
+2026-06-26T17:03:07.043458,ftl_buffer_zone,,0.00,empty_value
+2026-06-26T17:03:07.051802,location_of_property,,0.00,empty_value
+2026-06-26T17:03:07.066926,plot_no_survey_no,17-3-131/B,0.80,low_confidence
+2026-06-26T17:03:07.139434,layout_approval,,0.00,empty_value
+2026-06-26T17:03:07.171152,genuineness_of_plan,,0.00,empty_value
+2026-06-26T17:03:07.182154,any_other_comments_by_our_empanelled_values_on_authentic_of_approved_plan,,0.00,empty_value
+2026-06-26T17:03:07.202150,property_classification,(including,0.68,low_confidence
+2026-06-26T17:03:07.208261,property_classification,(including,0.69,low_confidence
+2026-06-26T17:03:07.222151,industrial_area,(including,0.69,low_confidence
+2026-06-26T17:03:07.235164,property_classification,,0.00,empty_value
+2026-06-26T17:03:07.250264,property_classification,,0.00,empty_value
+2026-06-26T17:03:07.265200,property_classification,,0.00,empty_value
+2026-06-26T17:03:07.275085,coming_under_municipality_limits_village_panchayat_corporation,VILLAGE,0.80,low_confidence
+2026-06-26T17:03:07.282082,whether_covered_under_any_state_central_govt_enactments_e_g_urban_land_ceiling_act_or_notified_under_agency_area_scheduled_area_cantonment_area,,0.00,empty_value
+2026-06-26T17:03:07.291082,boundaries_of_the_flat,502 in 5th Floor of,0.89,low_confidence
+2026-06-26T17:03:48.966739,mortgage_details,No prior mortgage or charge exists. Clear for financing.,0.80,low_confidence
+2026-06-26T17:03:48.972732,ftl_buffer_zone,,0.00,empty_value
+2026-06-26T17:03:48.978731,location_of_property,,0.00,empty_value
+2026-06-26T17:03:48.986255,plot_no_survey_no,17-3-131/B,0.80,low_confidence
+2026-06-26T17:03:49.045581,layout_approval,,0.00,empty_value
+2026-06-26T17:03:49.067419,genuineness_of_plan,,0.00,empty_value
+2026-06-26T17:03:49.082420,any_other_comments_by_our_empanelled_values_on_authentic_of_approved_plan,,0.00,empty_value
+2026-06-26T17:03:49.117037,property_classification,(including,0.68,low_confidence
+2026-06-26T17:03:49.131626,property_classification,(including,0.69,low_confidence
+2026-06-26T17:03:49.146134,industrial_area,(including,0.69,low_confidence
+2026-06-26T17:03:49.155704,property_classification,,0.00,empty_value
+2026-06-26T17:03:49.171707,property_classification,,0.00,empty_value
+2026-06-26T17:03:49.186703,property_classification,,0.00,empty_value
+2026-06-26T17:03:49.200521,coming_under_municipality_limits_village_panchayat_corporation,VILLAGE,0.80,low_confidence
+2026-06-26T17:03:49.207938,whether_covered_under_any_state_central_govt_enactments_e_g_urban_land_ceiling_act_or_notified_under_agency_area_scheduled_area_cantonment_area,,0.00,empty_value
+2026-06-26T17:03:49.215533,boundaries_of_the_flat,502 in 5th Floor of,0.89,low_confidence
+2026-06-26T17:07:42.202591,mortgage_details,No prior mortgage or charge exists. Clear for financing.,0.80,low_confidence
+2026-06-26T17:07:42.219044,ftl_buffer_zone,,0.00,empty_value
+2026-06-26T17:07:42.230779,location_of_property,,0.00,empty_value
+2026-06-26T17:07:42.237668,plot_no_survey_no,17-3-131/B,0.80,low_confidence
+2026-06-26T17:07:42.304091,layout_approval,,0.00,empty_value
+2026-06-26T17:07:42.318456,genuineness_of_plan,,0.00,empty_value
+2026-06-26T17:07:42.332549,any_other_comments_by_our_empanelled_values_on_authentic_of_approved_plan,,0.00,empty_value
+2026-06-26T17:07:42.360415,property_classification,(including,0.68,low_confidence
+2026-06-26T17:07:42.376218,property_classification,(including,0.69,low_confidence
+2026-06-26T17:07:42.390720,industrial_area,(including,0.69,low_confidence
+2026-06-26T17:07:42.405910,property_classification,,0.00,empty_value
+2026-06-26T17:07:42.421309,property_classification,,0.00,empty_value
+2026-06-26T17:07:42.428959,property_classification,,0.00,empty_value
+2026-06-26T17:07:42.444535,coming_under_municipality_limits_village_panchayat_corporation,VILLAGE,0.80,low_confidence
+2026-06-26T17:07:42.459796,whether_covered_under_any_state_central_govt_enactments_e_g_urban_land_ceiling_act_or_notified_under_agency_area_scheduled_area_cantonment_area,,0.00,empty_value
+2026-06-26T17:07:42.475145,boundaries_of_the_flat,502 in 5th Floor of,0.89,low_confidence
+2026-06-27T22:28:53.205830,owner_name,,0.00,empty_value
+2026-06-27T22:28:53.289499,survey_number,,0.00,empty_value
+2026-06-27T22:28:53.310299,gst_number,,0.00,empty_value
+2026-06-27T22:28:53.321307,village,,0.00,empty_value
+2026-06-27T22:44:18.605440,inspection_date,17-02-2026,0.70,low_confidence
+2026-06-27T22:44:18.613667,valuation_date,17-02-2026,0.70,low_confidence
+2026-06-27T22:44:18.649903,name_of_the_purchaser_s_and_his_their_address_es_with_phone_no_details_of_share_of_each_owner_in_case_of_joint_ownership,,0.00,empty_value
+2026-06-27T22:44:18.665372,brief_description_of_the_property_including_leasehold_freehold_etc,,0.00,empty_value
+2026-06-27T22:44:18.721108,ftl_buffer_zone,,0.00,empty_value
+2026-06-27T22:44:18.737121,location_of_property,,0.00,empty_value
+2026-06-27T22:44:18.743338,plot_no_survey_no,1956,0.80,low_confidence
+2026-06-27T22:44:18.812821,layout_approval,,0.00,empty_value
+2026-06-27T22:44:18.831617,genuineness_of_plan,,0.00,empty_value
+2026-06-27T22:44:18.846621,any_other_comments_by_our_empanelled_values_on_authentic_of_approved_plan,,0.00,empty_value
+2026-06-27T22:44:18.892041,property_classification,(including,0.68,low_confidence
+2026-06-27T22:44:18.907047,industrial_area,(including,0.69,low_confidence
+2026-06-27T22:44:18.921357,property_classification,,0.00,empty_value
+2026-06-27T22:44:18.936485,property_classification,,0.00,empty_value
+2026-06-27T22:44:18.953351,property_classification,,0.00,empty_value
+2026-06-27T22:44:18.962361,coming_under_municipality_limits_village_panchayat_corporation,"act 1956 having its registered office at SURVEY NO 77,BHANOOR VILLAGE",0.80,low_confidence
+2026-06-27T22:44:18.978014,whether_covered_under_any_state_central_govt_enactments_e_g_urban_land_ceiling_act_or_notified_under_agency_area_scheduled_area_cantonment_area,,0.00,empty_value
+2026-06-27T22:44:18.994629,boundaries_of_the_flat,502 in the,0.89,low_confidence
+2026-06-27T23:14:59.823009,inspection_date,17-02-2026,0.70,low_confidence
+2026-06-27T23:14:59.837131,valuation_date,17-02-2026,0.70,low_confidence
+2026-06-27T23:14:59.885851,name_of_the_purchaser_s_and_his_their_address_es_with_phone_no_details_of_share_of_each_owner_in_case_of_joint_ownership,,0.00,empty_value
+2026-06-27T23:14:59.895848,brief_description_of_the_property_including_leasehold_freehold_etc,,0.00,empty_value
+2026-06-27T23:14:59.953535,ftl_buffer_zone,,0.00,empty_value
+2026-06-27T23:14:59.964207,location_of_property,,0.00,empty_value
+2026-06-27T23:14:59.980212,plot_no_survey_no,1956,0.80,low_confidence
+2026-06-27T23:15:00.080747,layout_approval,,0.00,empty_value
+2026-06-27T23:15:00.107750,layout_approving_authority,,0.00,empty_value
+2026-06-27T23:15:00.136686,genuineness_of_plan,,0.00,empty_value
+2026-06-27T23:15:00.164225,any_other_comments_by_our_empanelled_values_on_authentic_of_approved_plan,,0.00,empty_value
+2026-06-27T23:15:00.250840,property_classification,,0.00,empty_value
+2026-06-27T23:15:00.279568,industrial_area,,0.00,empty_value
+2026-06-27T23:15:00.312557,property_classification,,0.00,empty_value
+2026-06-27T23:15:00.343595,property_classification,,0.00,empty_value
+2026-06-27T23:15:00.374131,property_classification,,0.00,empty_value
+2026-06-27T23:15:00.402193,coming_under_municipality_limits_village_panchayat_corporation,"act 1956 having its registered office at SURVEY NO 77,BHANOOR VILLAGE",0.80,low_confidence
+2026-06-27T23:15:00.431245,whether_covered_under_any_state_central_govt_enactments_e_g_urban_land_ceiling_act_or_notified_under_agency_area_scheduled_area_cantonment_area,,0.00,empty_value
+2026-06-27T23:15:00.462837,boundaries_of_the_flat,502 in the,0.89,low_confidence
+2026-06-28T16:41:49.679995,inspection_date,17-02-2026,0.70,low_confidence
+2026-06-28T16:41:49.723420,valuation_date,17-02-2026,0.70,low_confidence
+2026-06-28T16:41:49.822149,name_of_the_purchaser_s_and_his_their_address_es_with_phone_no_details_of_share_of_each_owner_in_case_of_joint_ownership,,0.00,empty_value
+2026-06-28T16:41:49.855846,brief_description_of_the_property_including_leasehold_freehold_etc,,0.00,empty_value
+2026-06-28T16:41:49.974531,ftl_buffer_zone,,0.00,empty_value
+2026-06-28T16:41:50.002279,location_of_property,,0.00,empty_value
+2026-06-28T16:41:50.036247,plot_no_survey_no,1956,0.80,low_confidence
+2026-06-28T16:41:50.198845,layout_approval,,0.00,empty_value
+2026-06-28T16:41:50.235743,layout_approving_authority,,0.00,empty_value
+2026-06-28T16:41:50.261522,genuineness_of_plan,,0.00,empty_value
+2026-06-28T16:41:50.297535,any_other_comments_by_our_empanelled_values_on_authentic_of_approved_plan,,0.00,empty_value
+2026-06-28T16:41:50.393667,property_classification,,0.00,empty_value
+2026-06-28T16:41:50.438294,industrial_area,,0.00,empty_value
+2026-06-28T16:41:50.476092,property_classification,,0.00,empty_value
+2026-06-28T16:41:50.519411,property_classification,,0.00,empty_value
+2026-06-28T16:41:50.548528,property_classification,,0.00,empty_value
+2026-06-28T16:41:50.581041,coming_under_municipality_limits_village_panchayat_corporation,"act 1956 having its registered office at SURVEY NO 77,BHANOOR VILLAGE",0.80,low_confidence
+2026-06-28T16:41:50.623046,whether_covered_under_any_state_central_govt_enactments_e_g_urban_land_ceiling_act_or_notified_under_agency_area_scheduled_area_cantonment_area,,0.00,empty_value
+2026-06-28T16:41:50.652142,boundaries_of_the_flat,502 in the,0.89,low_confidence
+2026-06-28T16:50:19.784273,general,,0.00,empty_value
+2026-06-28T16:50:19.811205,purpose_of_valuation,,0.00,empty_value
+2026-06-28T16:50:19.836973,inspection_date,01-01-1984,0.80,low_confidence
+2026-06-28T16:50:19.863867,valuation_date,01-01-1984,0.70,low_confidence
+2026-06-28T16:50:19.891019,list_of_documents,,0.00,empty_value
+2026-06-28T16:50:19.946987,name_of_the_purchaser_s_and_his_their_address_es_with_phone_no_details_of_share_of_each_owner_in_case_of_joint_ownership,,0.00,empty_value
+2026-06-28T16:50:19.974189,brief_description_of_the_property_including_leasehold_freehold_etc,,0.00,empty_value
+2026-06-28T16:50:20.002258,prohibited_properties_details,,0.00,empty_value
+2026-06-28T16:50:20.029303,legal_opinion,Clear and marketable title. Recommended for financing.,0.80,low_confidence
+2026-06-28T16:50:20.054118,mortgage_details,No prior mortgage or charge exists. Clear for financing.,0.80,low_confidence
+2026-06-28T16:50:20.077081,ftl_buffer_zone,,0.00,empty_value
+2026-06-28T16:50:20.102180,location_of_property,,0.00,empty_value
+2026-06-28T16:50:20.125452,plot_no_survey_no,1035/A/4/1/1/2,0.80,low_confidence
+2026-06-28T16:50:20.259484,layout_approval,,0.00,empty_value
+2026-06-28T16:50:20.311001,genuineness_of_plan,,0.00,empty_value
+2026-06-28T16:50:20.339121,any_other_comments_by_our_empanelled_values_on_authentic_of_approved_plan,,0.00,empty_value
+2026-06-28T16:50:20.422113,property_classification,,0.00,empty_value
+2026-06-28T16:50:20.448325,industrial_area,,0.00,empty_value
+2026-06-28T16:50:20.477129,property_classification,,0.00,empty_value
+2026-06-28T16:50:20.504077,property_classification,,0.00,empty_value
+2026-06-28T16:50:20.530465,property_classification,,0.00,empty_value
+2026-06-28T16:50:20.555965,coming_under_municipality_limits_village_panchayat_corporation,situated at Ameenpur Village,0.80,low_confidence
+2026-06-28T16:50:20.581782,whether_covered_under_any_state_central_govt_enactments_e_g_urban_land_ceiling_act_or_notified_under_agency_area_scheduled_area_cantonment_area,,0.00,empty_value
+2026-06-28T16:50:20.608349,boundaries_of_the_flat,403 in Fourth Floor known as,0.89,low_confidence
+2026-06-28T17:02:43.861037,general,,0.00,empty_value
+2026-06-28T17:02:43.887690,purpose_of_valuation,,0.00,empty_value
+2026-06-28T17:02:43.915898,inspection_date,,0.00,empty_value
+2026-06-28T17:02:43.942132,valuation_date,,0.00,empty_value
+2026-06-28T17:02:43.970136,list_of_documents,,0.00,empty_value
+2026-06-28T17:02:44.024317,name_of_the_purchaser_s_and_his_their_address_es_with_phone_no_details_of_share_of_each_owner_in_case_of_joint_ownership,,0.00,empty_value
+2026-06-28T17:02:44.050545,brief_description_of_the_property_including_leasehold_freehold_etc,| NORTH | Flat No 404 |,0.71,low_confidence
+2026-06-28T17:02:44.076518,prohibited_properties_details,,0.00,empty_value
+2026-06-28T17:02:44.102524,legal_opinion,Clear and marketable title. Recommended for financing.,0.80,low_confidence
+2026-06-28T17:02:44.126127,mortgage_details,No prior mortgage or charge exists. Clear for financing.,0.80,low_confidence
+2026-06-28T17:02:44.154087,ftl_buffer_zone,,0.00,empty_value
+2026-06-28T17:02:44.183085,location_of_property,| NORTH | Flat No 404 |,0.75,low_confidence
+2026-06-28T17:02:44.210198,plot_no_survey_no,1035,0.80,low_confidence
+2026-06-28T17:02:44.321678,layout_approval,,0.00,empty_value
+2026-06-28T17:02:44.348673,layout_approving_authority,,0.00,empty_value
+2026-06-28T17:02:44.375642,genuineness_of_plan,,0.00,empty_value
+2026-06-28T17:02:44.404235,any_other_comments_by_our_empanelled_values_on_authentic_of_approved_plan,,0.00,empty_value
+2026-06-28T17:02:44.457931,city_town,,0.00,empty_value
+2026-06-28T17:02:44.486455,property_classification,,0.00,empty_value
+2026-06-28T17:02:44.508479,industrial_area,,0.00,empty_value
+2026-06-28T17:02:44.536973,property_classification,,0.00,empty_value
+2026-06-28T17:02:44.566019,property_classification,,0.00,empty_value
+2026-06-28T17:02:44.593089,property_classification,,0.00,empty_value
+2026-06-28T17:02:44.620719,coming_under_municipality_limits_village_panchayat_corporation,covered with RCC | situated at Ameenpur | Village,0.80,low_confidence
+2026-06-28T17:02:44.647449,whether_covered_under_any_state_central_govt_enactments_e_g_urban_land_ceiling_act_or_notified_under_agency_area_scheduled_area_cantonment_area,,0.00,empty_value
+2026-06-28T17:02:44.672688,boundaries_of_the_flat,404,0.89,low_confidence
+2026-06-28T17:22:41.635664,general,,0.00,empty_value
+2026-06-28T17:22:41.664033,purpose_of_valuation,,0.00,empty_value
+2026-06-28T17:22:41.689419,inspection_date,1-57/317,0.00,validation_failed
+2026-06-28T17:22:41.717652,valuation_date,1-57/317,0.00,validation_failed
+2026-06-28T17:22:41.742123,list_of_documents,,0.00,empty_value
+2026-06-28T17:22:41.790934,name_of_the_purchaser_s_and_his_their_address_es_with_phone_no_details_of_share_of_each_owner_in_case_of_joint_ownership,,0.00,empty_value
+2026-06-28T17:22:41.819683,brief_description_of_the_property_including_leasehold_freehold_etc,,0.00,empty_value
+2026-06-28T17:22:41.846802,prohibited_properties_details,,0.00,empty_value
+2026-06-28T17:22:41.903760,ftl_buffer_zone,,0.00,empty_value
+2026-06-28T17:22:41.924707,location_of_property,## SCHEDULE OF THE PROPERTY,0.65,low_confidence
+2026-06-28T17:22:41.949461,plot_no_survey_no,227,0.80,low_confidence
+2026-06-28T17:22:42.061001,layout_approval,,0.00,empty_value
+2026-06-28T17:22:42.103737,genuineness_of_plan,,0.00,empty_value
+2026-06-28T17:22:42.126656,any_other_comments_by_our_empanelled_values_on_authentic_of_approved_plan,,0.00,empty_value
+2026-06-28T17:22:42.205848,property_classification,,0.00,empty_value
+2026-06-28T17:22:42.234939,industrial_area,,0.00,empty_value
+2026-06-28T17:22:42.259190,property_classification,,0.00,empty_value
+2026-06-28T17:22:42.285686,property_classification,,0.00,empty_value
+2026-06-28T17:22:42.320179,property_classification,,0.00,empty_value
+2026-06-28T17:22:42.348741,coming_under_municipality_limits_village_panchayat_corporation,Muthangi Village,0.80,low_confidence
+2026-06-28T17:22:42.370610,whether_covered_under_any_state_central_govt_enactments_e_g_urban_land_ceiling_act_or_notified_under_agency_area_scheduled_area_cantonment_area,,0.00,empty_value
+2026-06-28T17:22:42.393330,boundaries_of_the_flat,NORTH | LIFT&OPENTO SKY,0.85,low_confidence
+2026-06-29T15:23:36.088345,general,,0.00,empty_value
+2026-06-29T15:23:36.141707,purpose_of_valuation,,0.00,empty_value
+2026-06-29T15:23:36.167046,inspection_date,,0.00,empty_value
+2026-06-29T15:23:36.191150,valuation_date,,0.00,empty_value
+2026-06-29T15:23:36.216196,list_of_documents,,0.00,empty_value
+2026-06-29T15:23:36.257257,name_of_the_purchaser_s_and_his_their_address_es_with_phone_no_details_of_share_of_each_owner_in_case_of_joint_ownership,,0.00,empty_value
+2026-06-29T15:23:36.281477,brief_description_of_the_property_including_leasehold_freehold_etc,| NORTH | Flat No 404 |,0.71,low_confidence
+2026-06-29T15:23:36.303835,prohibited_properties_details,,0.00,empty_value
+2026-06-29T15:23:36.327931,legal_opinion,Clear and marketable title. Recommended for financing.,0.80,low_confidence
+2026-06-29T15:23:36.346425,mortgage_details,No prior mortgage or charge exists. Clear for financing.,0.80,low_confidence
+2026-06-29T15:23:36.368218,ftl_buffer_zone,,0.00,empty_value
+2026-06-29T15:23:36.388270,location_of_property,| NORTH | Flat No 404 |,0.75,low_confidence
+2026-06-29T15:23:36.413221,plot_no_survey_no,1035,0.80,low_confidence
+2026-06-29T15:23:36.521143,layout_approval,,0.00,empty_value
+2026-06-29T15:23:36.542081,layout_approving_authority,,0.00,empty_value
+2026-06-29T15:23:36.563195,genuineness_of_plan,,0.00,empty_value
+2026-06-29T15:23:36.581940,any_other_comments_by_our_empanelled_values_on_authentic_of_approved_plan,,0.00,empty_value
+2026-06-29T15:23:36.618501,city_town,,0.00,empty_value
+2026-06-29T15:23:36.643502,property_classification,,0.00,empty_value
+2026-06-29T15:23:36.669294,industrial_area,,0.00,empty_value
+2026-06-29T15:23:36.694800,property_classification,,0.00,empty_value
+2026-06-29T15:23:36.714515,property_classification,,0.00,empty_value
+2026-06-29T15:23:36.736516,property_classification,,0.00,empty_value
+2026-06-29T15:23:36.759800,coming_under_municipality_limits_village_panchayat_corporation,covered with RCC | situated at Ameenpur | Village,0.80,low_confidence
+2026-06-29T15:23:36.781512,whether_covered_under_any_state_central_govt_enactments_e_g_urban_land_ceiling_act_or_notified_under_agency_area_scheduled_area_cantonment_area,,0.00,empty_value
+2026-06-29T15:23:36.806849,boundaries_of_the_flat,404,0.89,low_confidence
+2026-06-29T15:46:58.512612,general,,0.00,empty_value
+2026-06-29T15:46:58.529079,purpose_of_valuation,,0.00,empty_value
+2026-06-29T15:46:58.540975,inspection_date,,0.00,empty_value
+2026-06-29T15:46:58.556554,valuation_date,,0.00,empty_value
+2026-06-29T15:46:58.573960,list_of_documents,,0.00,empty_value
+2026-06-29T15:46:58.605041,name_of_the_purchaser_s_and_his_their_address_es_with_phone_no_details_of_share_of_each_owner_in_case_of_joint_ownership,,0.00,empty_value
+2026-06-29T15:46:58.620537,brief_description_of_the_property_including_leasehold_freehold_etc,| NORTH | Flat No 404 |,0.71,low_confidence
+2026-06-29T15:46:58.634051,prohibited_properties_details,,0.00,empty_value
+2026-06-29T15:46:58.646064,legal_opinion,Clear and marketable title. Recommended for financing.,0.80,low_confidence
+2026-06-29T15:46:58.658051,mortgage_details,No prior mortgage or charge exists. Clear for financing.,0.80,low_confidence
+2026-06-29T15:46:58.674059,ftl_buffer_zone,,0.00,empty_value
+2026-06-29T15:46:58.686059,location_of_property,| NORTH | Flat No 404 |,0.75,low_confidence
+2026-06-29T15:46:58.701967,plot_no_survey_no,1035,0.80,low_confidence
+2026-06-29T15:46:58.771697,layout_approval,,0.00,empty_value
+2026-06-29T15:46:58.784652,layout_approving_authority,,0.00,empty_value
+2026-06-29T15:46:58.793649,genuineness_of_plan,,0.00,empty_value
+2026-06-29T15:46:58.809437,any_other_comments_by_our_empanelled_values_on_authentic_of_approved_plan,,0.00,empty_value
+2026-06-29T15:46:58.836815,city_town,,0.00,empty_value
+2026-06-29T15:46:58.852932,property_classification,,0.00,empty_value
+2026-06-29T15:46:58.868131,industrial_area,,0.00,empty_value
+2026-06-29T15:46:58.884484,property_classification,,0.00,empty_value
+2026-06-29T15:46:58.899948,property_classification,,0.00,empty_value
+2026-06-29T15:46:58.917077,property_classification,,0.00,empty_value
+2026-06-29T15:46:58.931640,coming_under_municipality_limits_village_panchayat_corporation,covered with RCC | situated at Ameenpur | Village,0.80,low_confidence
+2026-06-29T15:46:58.948087,whether_covered_under_any_state_central_govt_enactments_e_g_urban_land_ceiling_act_or_notified_under_agency_area_scheduled_area_cantonment_area,,0.00,empty_value
+2026-06-29T15:46:58.965238,boundaries_of_the_flat,404,0.89,low_confidence
+2026-06-29T15:52:14.409093,inspection_date,"Date of valuation List of documents produced for perusal Name of the Owner(s) Name of the purchaser (s) and his / their address (es) with Phone no. (details of share of each owner in case of joint ownership) Brief description of the property (Including leasehold / freehold etc.) Prohibited Properties Details   Legal Opinion Mortgage Details   FTL and Buffer Zone Details   Location of property   Plot No. / Survey No.   Door No / House No   T.S. No. / Village   Ward / Taluka   Mandal / District   Date of issue and validity of layout of approved map / plan   Approved map / plan issuing authority   Whether genuineness or authenticity of approved map / Plan is Verified Yes, Verified Any other comments by our empanelled values on Authentic of approved plan Title flow to be Verified with the legal opinion. Postal address of the property   City / Town City Residential Area Residential Area Commercial Area No Industrial Area No Classification of the area   High / Middle / Poor Middle Urban / Semi Urban / Rural Urban Coming under Municipality limits / Village Panchayat/ Corporation   Whether covered under any State / Central Govt. enactments (e.g. Urban Land Ceiling Act) or notified under agency area / scheduled area / cantonment area No Boundaries of the Flat As Per Deed As Per Actuals North OPEN TO SKY OPEN TO SKY South OPEN TO SKY OPEN TO SKY East CORRIDOR & LIFT AND FLAT NO. 302 CORRIDOR & LIFT AND FLAT NO. 302 West OPEN TO SKY OPEN TO SKY",0.00,validation_failed
+2026-06-29T15:52:14.423448,valuation_date,"Date of valuation List of documents produced for perusal Name of the Owner(s) Name of the purchaser (s) and his / their address (es) with Phone no. (details of share of each owner in case of joint ownership) Brief description of the property (Including leasehold / freehold etc.) Prohibited Properties Details   Legal Opinion Mortgage Details   FTL and Buffer Zone Details   Location of property   Plot No. / Survey No.   Door No / House No   T.S. No. / Village   Ward / Taluka   Mandal / District   Date of issue and validity of layout of approved map / plan   Approved map / plan issuing authority   Whether genuineness or authenticity of approved map / Plan is Verified Yes, Verified Any other comments by our empanelled values on Authentic of approved plan Title flow to be Verified with the legal opinion. Postal address of the property   City / Town City Residential Area Residential Area Commercial Area No Industrial Area No Classification of the area   High / Middle / Poor Middle Urban / Semi Urban / Rural Urban Coming under Municipality limits / Village Panchayat/ Corporation   Whether covered under any State / Central Govt. enactments (e.g. Urban Land Ceiling Act) or notified under agency area / scheduled area / cantonment area No Boundaries of the Flat As Per Deed As Per Actuals North OPEN TO SKY OPEN TO SKY South OPEN TO SKY OPEN TO SKY East CORRIDOR & LIFT AND FLAT NO. 302 CORRIDOR & LIFT AND FLAT NO. 302 West OPEN TO SKY OPEN TO SKY",0.00,validation_failed
+2026-06-29T15:52:14.471075,name_of_the_purchaser_s_and_his_their_address_es_with_phone_no_details_of_share_of_each_owner_in_case_of_joint_ownership,,0.00,empty_value
+2026-06-29T15:52:14.486081,brief_description_of_the_property_including_leasehold_freehold_etc,Plot No. / Survey No.,0.65,low_confidence
+2026-06-29T15:52:14.555911,plot_no_survey_no,302,0.80,low_confidence
+2026-06-29T15:56:20.364265,inspection_date,"Date of valuation List of documents produced for perusal Name of the Owner(s) Name of the purchaser (s) and his / their address (es) with Phone no. (details of share of each owner in case of joint ownership) Brief description of the property (Including leasehold / freehold etc.) Prohibited Properties Details   Legal Opinion Mortgage Details   FTL and Buffer Zone Details   Location of property   Plot No. / Survey No.   Door No / House No   T.S. No. / Village   Ward / Taluka   Mandal / District   Date of issue and validity of layout of approved map / plan   Approved map / plan issuing authority   Whether genuineness or authenticity of approved map / Plan is Verified Yes, Verified Any other comments by our empanelled values on Authentic of approved plan Title flow to be Verified with the legal opinion. Postal address of the property   City / Town City Residential Area Residential Area Commercial Area No Industrial Area No Classification of the area   High / Middle / Poor Middle Urban / Semi Urban / Rural Urban Coming under Municipality limits / Village Panchayat/ Corporation   Whether covered under any State / Central Govt. enactments (e.g. Urban Land Ceiling Act) or notified under agency area / scheduled area / cantonment area No Boundaries of the Flat As Per Deed As Per Actuals North OPEN TO SKY OPEN TO SKY South OPEN TO SKY OPEN TO SKY East CORRIDOR & LIFT AND FLAT NO. 302 CORRIDOR & LIFT AND FLAT NO. 302 West OPEN TO SKY OPEN TO SKY",0.00,validation_failed
+2026-06-29T15:56:20.380053,valuation_date,"Date of valuation List of documents produced for perusal Name of the Owner(s) Name of the purchaser (s) and his / their address (es) with Phone no. (details of share of each owner in case of joint ownership) Brief description of the property (Including leasehold / freehold etc.) Prohibited Properties Details   Legal Opinion Mortgage Details   FTL and Buffer Zone Details   Location of property   Plot No. / Survey No.   Door No / House No   T.S. No. / Village   Ward / Taluka   Mandal / District   Date of issue and validity of layout of approved map / plan   Approved map / plan issuing authority   Whether genuineness or authenticity of approved map / Plan is Verified Yes, Verified Any other comments by our empanelled values on Authentic of approved plan Title flow to be Verified with the legal opinion. Postal address of the property   City / Town City Residential Area Residential Area Commercial Area No Industrial Area No Classification of the area   High / Middle / Poor Middle Urban / Semi Urban / Rural Urban Coming under Municipality limits / Village Panchayat/ Corporation   Whether covered under any State / Central Govt. enactments (e.g. Urban Land Ceiling Act) or notified under agency area / scheduled area / cantonment area No Boundaries of the Flat As Per Deed As Per Actuals North OPEN TO SKY OPEN TO SKY South OPEN TO SKY OPEN TO SKY East CORRIDOR & LIFT AND FLAT NO. 302 CORRIDOR & LIFT AND FLAT NO. 302 West OPEN TO SKY OPEN TO SKY",0.00,validation_failed
+2026-06-29T15:56:20.411553,name_of_the_purchaser_s_and_his_their_address_es_with_phone_no_details_of_share_of_each_owner_in_case_of_joint_ownership,,0.00,empty_value
+2026-06-29T15:56:20.425064,brief_description_of_the_property_including_leasehold_freehold_etc,Plot No. / Survey No.,0.65,low_confidence
+2026-06-29T15:56:20.518784,plot_no_survey_no,302,0.80,low_confidence
+2026-06-29T16:06:12.951361,inspection_date,"Date of valuation List of documents produced for perusal Name of the Owner(s) Name of the purchaser (s) and his / their address (es) with Phone no. (details of share of each owner in case of joint ownership) Brief description of the property (Including leasehold / freehold etc.) Prohibited Properties Details   Legal Opinion Mortgage Details   FTL and Buffer Zone Details   Location of property   Plot No. / Survey No.   Door No / House No   T.S. No. / Village   Ward / Taluka   Mandal / District   Date of issue and validity of layout of approved map / plan   Approved map / plan issuing authority   Whether genuineness or authenticity of approved map / Plan is Verified Yes, Verified Any other comments by our empanelled values on Authentic of approved plan Title flow to be Verified with the legal opinion. Postal address of the property   City / Town City Residential Area Residential Area Commercial Area No Industrial Area No Classification of the area   High / Middle / Poor Middle Urban / Semi Urban / Rural Urban Coming under Municipality limits / Village Panchayat/ Corporation   Whether covered under any State / Central Govt. enactments (e.g. Urban Land Ceiling Act) or notified under agency area / scheduled area / cantonment area No Boundaries of the Flat As Per Deed As Per Actuals North OPEN TO SKY OPEN TO SKY South OPEN TO SKY OPEN TO SKY East CORRIDOR & LIFT AND FLAT NO. 302 CORRIDOR & LIFT AND FLAT NO. 302 West OPEN TO SKY OPEN TO SKY",0.00,validation_failed
+2026-06-29T16:06:12.962357,valuation_date,"Date of valuation List of documents produced for perusal Name of the Owner(s) Name of the purchaser (s) and his / their address (es) with Phone no. (details of share of each owner in case of joint ownership) Brief description of the property (Including leasehold / freehold etc.) Prohibited Properties Details   Legal Opinion Mortgage Details   FTL and Buffer Zone Details   Location of property   Plot No. / Survey No.   Door No / House No   T.S. No. / Village   Ward / Taluka   Mandal / District   Date of issue and validity of layout of approved map / plan   Approved map / plan issuing authority   Whether genuineness or authenticity of approved map / Plan is Verified Yes, Verified Any other comments by our empanelled values on Authentic of approved plan Title flow to be Verified with the legal opinion. Postal address of the property   City / Town City Residential Area Residential Area Commercial Area No Industrial Area No Classification of the area   High / Middle / Poor Middle Urban / Semi Urban / Rural Urban Coming under Municipality limits / Village Panchayat/ Corporation   Whether covered under any State / Central Govt. enactments (e.g. Urban Land Ceiling Act) or notified under agency area / scheduled area / cantonment area No Boundaries of the Flat As Per Deed As Per Actuals North OPEN TO SKY OPEN TO SKY South OPEN TO SKY OPEN TO SKY East CORRIDOR & LIFT AND FLAT NO. 302 CORRIDOR & LIFT AND FLAT NO. 302 West OPEN TO SKY OPEN TO SKY",0.00,validation_failed
+2026-06-29T16:06:13.000288,name_of_the_purchaser_s_and_his_their_address_es_with_phone_no_details_of_share_of_each_owner_in_case_of_joint_ownership,,0.00,empty_value
+2026-06-29T16:06:13.015074,brief_description_of_the_property_including_leasehold_freehold_etc,Plot No. / Survey No.,0.65,low_confidence
+2026-06-29T16:06:13.099503,plot_no_survey_no,302,0.80,low_confidence
+2026-06-29T16:07:59.081613,inspection_date,"Date of valuation List of documents produced for perusal Name of the Owner(s) Name of the purchaser (s) and his / their address (es) with Phone no. (details of share of each owner in case of joint ownership) Brief description of the property (Including leasehold / freehold etc.) Prohibited Properties Details   Legal Opinion Mortgage Details   FTL and Buffer Zone Details   Location of property   Plot No. / Survey No.   Door No / House No   T.S. No. / Village   Ward / Taluka   Mandal / District   Date of issue and validity of layout of approved map / plan   Approved map / plan issuing authority   Whether genuineness or authenticity of approved map / Plan is Verified Yes, Verified Any other comments by our empanelled values on Authentic of approved plan Title flow to be Verified with the legal opinion. Postal address of the property   City / Town City Residential Area Residential Area Commercial Area No Industrial Area No Classification of the area   High / Middle / Poor Middle Urban / Semi Urban / Rural Urban Coming under Municipality limits / Village Panchayat/ Corporation   Whether covered under any State / Central Govt. enactments (e.g. Urban Land Ceiling Act) or notified under agency area / scheduled area / cantonment area No Boundaries of the Flat As Per Deed As Per Actuals North OPEN TO SKY OPEN TO SKY South OPEN TO SKY OPEN TO SKY East CORRIDOR & LIFT AND FLAT NO. 302 CORRIDOR & LIFT AND FLAT NO. 302 West OPEN TO SKY OPEN TO SKY",0.00,validation_failed
+2026-06-29T16:07:59.098226,valuation_date,"Date of valuation List of documents produced for perusal Name of the Owner(s) Name of the purchaser (s) and his / their address (es) with Phone no. (details of share of each owner in case of joint ownership) Brief description of the property (Including leasehold / freehold etc.) Prohibited Properties Details   Legal Opinion Mortgage Details   FTL and Buffer Zone Details   Location of property   Plot No. / Survey No.   Door No / House No   T.S. No. / Village   Ward / Taluka   Mandal / District   Date of issue and validity of layout of approved map / plan   Approved map / plan issuing authority   Whether genuineness or authenticity of approved map / Plan is Verified Yes, Verified Any other comments by our empanelled values on Authentic of approved plan Title flow to be Verified with the legal opinion. Postal address of the property   City / Town City Residential Area Residential Area Commercial Area No Industrial Area No Classification of the area   High / Middle / Poor Middle Urban / Semi Urban / Rural Urban Coming under Municipality limits / Village Panchayat/ Corporation   Whether covered under any State / Central Govt. enactments (e.g. Urban Land Ceiling Act) or notified under agency area / scheduled area / cantonment area No Boundaries of the Flat As Per Deed As Per Actuals North OPEN TO SKY OPEN TO SKY South OPEN TO SKY OPEN TO SKY East CORRIDOR & LIFT AND FLAT NO. 302 CORRIDOR & LIFT AND FLAT NO. 302 West OPEN TO SKY OPEN TO SKY",0.00,validation_failed
+2026-06-29T16:07:59.129308,name_of_the_purchaser_s_and_his_their_address_es_with_phone_no_details_of_share_of_each_owner_in_case_of_joint_ownership,,0.00,empty_value
+2026-06-29T16:07:59.144067,brief_description_of_the_property_including_leasehold_freehold_etc,Plot No. / Survey No.,0.65,low_confidence
+2026-06-29T16:07:59.215593,plot_no_survey_no,302,0.80,low_confidence
+2026-06-29T16:25:28.100264,inspection_date,"Date of valuation List of documents produced for perusal Name of the Owner(s) Name of the purchaser (s) and his / their address (es) with Phone no. (details of share of each owner in case of joint ownership) Brief description of the property (Including leasehold / freehold etc.) Prohibited Properties Details   Legal Opinion Mortgage Details   FTL and Buffer Zone Details   Location of property   Plot No. / Survey No.   Door No / House No   T.S. No. / Village   Ward / Taluka   Mandal / District   Date of issue and validity of layout of approved map / plan   Approved map / plan issuing authority   Whether genuineness or authenticity of approved map / Plan is Verified Yes, Verified Any other comments by our empanelled values on Authentic of approved plan Title flow to be Verified with the legal opinion. Postal address of the property   City / Town City Residential Area Residential Area Commercial Area No Industrial Area No Classification of the area   High / Middle / Poor Middle Urban / Semi Urban / Rural Urban Coming under Municipality limits / Village Panchayat/ Corporation   Whether covered under any State / Central Govt. enactments (e.g. Urban Land Ceiling Act) or notified under agency area / scheduled area / cantonment area No Boundaries of the Flat As Per Deed As Per Actuals North OPEN TO SKY OPEN TO SKY South OPEN TO SKY OPEN TO SKY East CORRIDOR & LIFT AND FLAT NO. 302 CORRIDOR & LIFT AND FLAT NO. 302 West OPEN TO SKY OPEN TO SKY",0.00,validation_failed
+2026-06-29T16:25:28.118129,valuation_date,"Date of valuation List of documents produced for perusal Name of the Owner(s) Name of the purchaser (s) and his / their address (es) with Phone no. (details of share of each owner in case of joint ownership) Brief description of the property (Including leasehold / freehold etc.) Prohibited Properties Details   Legal Opinion Mortgage Details   FTL and Buffer Zone Details   Location of property   Plot No. / Survey No.   Door No / House No   T.S. No. / Village   Ward / Taluka   Mandal / District   Date of issue and validity of layout of approved map / plan   Approved map / plan issuing authority   Whether genuineness or authenticity of approved map / Plan is Verified Yes, Verified Any other comments by our empanelled values on Authentic of approved plan Title flow to be Verified with the legal opinion. Postal address of the property   City / Town City Residential Area Residential Area Commercial Area No Industrial Area No Classification of the area   High / Middle / Poor Middle Urban / Semi Urban / Rural Urban Coming under Municipality limits / Village Panchayat/ Corporation   Whether covered under any State / Central Govt. enactments (e.g. Urban Land Ceiling Act) or notified under agency area / scheduled area / cantonment area No Boundaries of the Flat As Per Deed As Per Actuals North OPEN TO SKY OPEN TO SKY South OPEN TO SKY OPEN TO SKY East CORRIDOR & LIFT AND FLAT NO. 302 CORRIDOR & LIFT AND FLAT NO. 302 West OPEN TO SKY OPEN TO SKY",0.00,validation_failed
+2026-06-29T16:25:28.168931,name_of_the_purchaser_s_and_his_their_address_es_with_phone_no_details_of_share_of_each_owner_in_case_of_joint_ownership,,0.00,empty_value
+2026-06-29T16:25:28.186676,brief_description_of_the_property_including_leasehold_freehold_etc,Plot No. / Survey No.,0.65,low_confidence
+2026-06-29T16:25:28.274238,plot_no_survey_no,302,0.80,low_confidence

@@ -903,11 +903,17 @@ def _post_process_extracted_fields(fields: dict[str, Any], text: str, required_f
         if not plan_verified or not plan_verified.get("value"):
             fields["approved_plan_verified"] = make_field("Yes, Verified", 1.0)
 
-    # 20. approved_plan_comments
-    if required_fields is None or "approved_plan_comments" in required_fields:
-        plan_comments = fields.get("approved_plan_comments")
-        if not plan_comments or not plan_comments.get("value"):
-            fields["approved_plan_comments"] = make_field("Title flow to be Verified with the legal opinion.", 1.0)
+    # 21. General Formatting Pass across all fields (whitespace normalization, trim punctuation dangles)
+    for k, f_data in fields.items():
+        if isinstance(f_data, dict) and f_data.get("value"):
+            v = str(f_data["value"])
+            # Remove duplicated whitespace and newline noise
+            v = re.sub(r"[ \t]+", " ", v)
+            v = re.sub(r"\n\s*\n+", "\n", v).strip()
+            # Trim dangling punctuation leading or trailing
+            v = re.sub(r"^[:\-–—=,;\s]+", "", v)
+            v = re.sub(r"[:\-–—=,;\s]+$", "", v).strip()
+            f_data["value"] = v
 
     return fields
 
@@ -1027,7 +1033,7 @@ def extract_multiline_value(start_idx: int, lines: list[str], stop_aliases: list
             continue
         stop_triggered = False
         for stop_lbl in stop_aliases:
-            if re.search(rf"(?i)(?<!\w){re.escape(stop_lbl)}(?!\w)", line):
+            if re.search(rf"(?i)(?<!\w){re.escape(stop_lbl)}(?!\w)\s*[:\-–—=]", line) or re.match(rf"(?i)^[^\w]*{re.escape(stop_lbl)}[^\w]*$", line):
                 stop_triggered = True
                 break
         if stop_triggered and idx > start_idx:
@@ -1056,7 +1062,7 @@ def extract_boundaries(lines: list[str], required_fields: list[str]) -> dict[str
         source_line = None
         matched_lbl = None
         for idx, line in enumerate(lines):
-            pattern = rf"(?i)\b(?:bounded\s+on\s+(?:the\s+)?{direction}|{direction}\s+(?:boundary|side|direction)|{direction})\b\s*(?:by\s*[:\-–—=]?|[:\-–—=])?\s*([^\n]+)"
+            pattern = rf"(?i)\b(?:bounded\s+on\s+(?:the\s+)?{direction}|{direction}\s+(?:boundary|side|direction)|(?<!\()(?<!\(\s){direction}(?!\))(?!\s*\)))\b\s*(?:by\s*[:\-–—=]?|[:\-–—=])?\s*([^\n]+)"
             m = re.search(pattern, line)
             if m:
                 cand = m.group(1).strip()
@@ -1125,6 +1131,17 @@ def extract_regex_value(field_code: str, extracted_val: str | None, line_context
     return None
 
 
+def extract_value_after_label(label: str, line_text: str, line_idx: int) -> str | None:
+    # case-insensitive split
+    pattern = re.compile(re.escape(label), re.IGNORECASE)
+    match = pattern.search(line_text)
+    if not match:
+        return None
+    after_text = line_text[match.end():].strip()
+    after_text_clean = re.sub(r'^[:\-–—=\s]+', '', after_text).strip()
+    return after_text_clean if after_text_clean else None
+
+
 def extract_address(value: str) -> str:
     if not value:
         return ""
@@ -1174,6 +1191,15 @@ def rule_based_fallback_fields(
         all_stop_aliases.extend(aliases_list)
     all_stop_aliases = sorted(list(set(all_stop_aliases)), key=len, reverse=True)
 
+    GENERIC_STOP_WORDS = {
+        "pvt ltd", "private limited", "m/s", "s/o", "w/o", "d/o", "h/o", "c/o",
+        "company", "contractor", "signatory", "authorised signatory", "authorized signatory",
+        "rep by its manager", "manager", "represented by", "relation", "witness",
+        "wife of", "son of", "daughter of", "husband of", "care of", "late",
+        "road", "street", "colony", "nagar", "town", "city", "mandal", "district", "state", "village"
+    }
+    all_stop_aliases = [sa for sa in all_stop_aliases if sa.lower().strip(" .:-–—=") not in GENERIC_STOP_WORDS]
+
     def find_page_for_line(matched_line_text: str, page_res: list[dict[str, Any]] | None) -> int:
         if not page_res:
             return 1
@@ -1219,7 +1245,7 @@ def rule_based_fallback_fields(
                                 confidence = TABLE_EXACT
                                 matched_label = lbl
                                 break
-                            elif fuzz.partial_ratio(lbl.lower(), first_cell.lower()) > 85:
+                            elif len(first_cell.strip()) >= 3 and fuzz.token_sort_ratio(lbl.lower(), first_cell.lower()) > 80:
                                 is_match = True
                                 match_type = "table"
                                 confidence = TABLE_EXACT
@@ -1239,7 +1265,7 @@ def rule_based_fallback_fields(
                         break
                 if direction:
                     for line_idx, line in lines_with_indices:
-                        pattern = rf"(?i)\b(?:bounded\s+on\s+(?:the\s+)?{direction}|{direction}\s+(?:boundary|side|direction)|{direction})\b\s*[:\-–—=]?\s*([^\n]+)"
+                        pattern = rf"(?i)\b(?:bounded\s+on\s+(?:the\s+)?{direction}|{direction}\s+(?:boundary|side|direction)|(?<!\()(?<!\(\s){direction}(?!\))(?!\s*\)))\b\s*[:\-–—=]?\s*([^\n]+)"
                         m = re.search(pattern, line)
                         if m:
                             cand = m.group(1).strip()
@@ -1259,7 +1285,12 @@ def rule_based_fallback_fields(
                         pattern = rf"(?i)(?<!\w){re.escape(lbl)}(?!\w)"
                         match = re.search(pattern, line)
                         if match:
+                            start_idx = match.start()
+                            if start_idx > 0 and line[:start_idx].rstrip().endswith('('):
+                                continue
                             after_text = line[match.end():].strip()
+                            if len(lbl) == 1 and not re.match(r'^\s*[:\-–—=]', after_text):
+                                continue
                             after_text_clean = re.sub(r'^[:\-–—=\s]+', '', after_text).strip()
                             if after_text_clean and len(after_text_clean) > 1:
                                 val_lc = after_text_clean.lower()
@@ -1280,14 +1311,22 @@ def rule_based_fallback_fields(
                         pattern = rf"(?i)(?<!\w){re.escape(lbl)}(?!\w)"
                         match = re.search(pattern, line)
                         if match:
+                            start_idx = match.start()
+                            if start_idx > 0 and line[:start_idx].rstrip().endswith('('):
+                                continue
                             after_text = line[match.end():].strip()
+                            if len(lbl) == 1:
+                                line_stripped = line.strip()
+                                if not re.match(r'^' + re.escape(lbl) + r'\s*[:\-–—=]?$', line_stripped, flags=re.IGNORECASE) and not re.match(r'^\s*[:\-–—=]', after_text):
+                                    continue
                             after_text_clean = re.sub(r'^[:\-–—=\s]+', '', after_text).strip()
                             if not after_text_clean or not re.search(r'[a-zA-Z0-9]', after_text_clean):
                                 if i + 1 < len(lines_with_indices):
                                     next_line_idx, next_line_text = lines_with_indices[i + 1]
                                     has_other_label = False
-                                    for stop_lbl in all_stop_aliases:
-                                        if re.search(rf"(?i)(?<!\w){re.escape(stop_lbl)}(?!\w)", next_line_text):
+                                    stop_aliases = [sa for sa in all_stop_aliases if sa not in labels]
+                                    for stop_lbl in stop_aliases:
+                                        if re.search(rf"(?i)(?<!\w){re.escape(stop_lbl)}(?!\w)\s*[:\-–—=]", next_line_text) or re.match(rf"(?i)^[^\w]*{re.escape(stop_lbl)}[^\w]*$", next_line_text):
                                             has_other_label = True
                                             break
                                     if not has_other_label:
@@ -1320,7 +1359,7 @@ def rule_based_fallback_fields(
                                     initial_val = next_line_text
                                     start_lookahead_idx = i + 1
                             
-                            multiline_val = extract_multiline_value(start_lookahead_idx, [l for _, l in lines_with_indices], all_stop_aliases)
+                            multiline_val = extract_multiline_value(start_lookahead_idx, [l for _, l in lines_with_indices], [sa for sa in all_stop_aliases if sa not in labels])
                             if multiline_val:
                                 value = multiline_val
                                 match_type = "multiline"
@@ -1335,7 +1374,7 @@ def rule_based_fallback_fields(
             if not value:
                 for line_idx, line in lines_with_indices:
                     for lbl in labels:
-                        if lbl.lower() in line.lower():
+                        if len(lbl) >= 3 and lbl.lower() in line.lower():
                             ext_val = extract_value_after_label(lbl, line, line_idx)
                             if ext_val:
                                 value = ext_val
@@ -1350,36 +1389,47 @@ def rule_based_fallback_fields(
             # --- 7. Fuzzy Match ---
             if not value:
                 for i, (line_idx, line) in enumerate(lines_with_indices):
-                    for lbl in labels:
-                        if fuzz.partial_ratio(lbl.lower(), line.lower()) > 80:
-                            separators = [':', '=', ' - ', ' – ', ' — ']
-                            for sep in separators:
-                                if sep in line:
-                                    parts = line.split(sep, 1)
-                                    if fuzz.partial_ratio(lbl.lower(), parts[0].lower()) > 80:
-                                        ext_val = parts[1].strip()
-                                        ext_val_cleaned = re.sub(r'^[:\-–—=\s]+', '', ext_val).strip()
-                                        if ext_val_cleaned:
-                                            value = ext_val_cleaned
-                                            match_type = "fuzzy"
-                                            matched_label = lbl
-                                            matched_line_idx = line_idx
-                                            confidence = FUZZY
-                                            break
+                    # Check if line has a separator
+                    has_sep = False
+                    separators = [':', '=', ' - ', ' – ', ' — ']
+                    for sep in separators:
+                        if sep in line:
+                            parts = line.split(sep, 1)
+                            has_sep = True
+                            for lbl in labels:
+                                part0_ratio = fuzz.token_sort_ratio(lbl.lower(), parts[0].lower())
+                                if len(parts[0].strip()) >= 4 and len(lbl) >= 4 and part0_ratio > 75:
+                                    ext_val = parts[1].strip()
+                                    ext_val_cleaned = re.sub(r'^[:\-–—=\s]+', '', ext_val).strip()
+                                    if ext_val_cleaned:
+                                        value = ext_val_cleaned
+                                        match_type = "fuzzy"
+                                        matched_label = lbl
+                                        matched_line_idx = line_idx
+                                        confidence = FUZZY
+                                        break
                             if value:
                                 break
-                            if i + 1 < len(lines_with_indices):
-                                next_line_idx, next_line_text = lines_with_indices[i + 1]
-                                ext_val_cleaned = re.sub(r'^[:\-–—=\s]+', '', next_line_text).strip()
-                                if ext_val_cleaned:
-                                    value = ext_val_cleaned
-                                    match_type = "fuzzy"
-                                    matched_label = lbl
-                                    matched_line_idx = line_idx
-                                    confidence = FUZZY
-                                    break
                     if value:
                         break
+
+                    # If no separator, match the entire line
+                    if not has_sep:
+                        for lbl in labels:
+                            ratio = fuzz.token_sort_ratio(lbl.lower(), line.lower())
+                            if len(line) >= 4 and len(lbl) >= 4 and ratio > 75:
+                                if i + 1 < len(lines_with_indices):
+                                    next_line_idx, next_line_text = lines_with_indices[i + 1]
+                                    ext_val_cleaned = re.sub(r'^[:\-–—=\s]+', '', next_line_text).strip()
+                                    if ext_val_cleaned:
+                                        value = ext_val_cleaned
+                                        match_type = "fuzzy"
+                                        matched_label = lbl
+                                        matched_line_idx = line_idx
+                                        confidence = FUZZY
+                                        break
+                        if value:
+                            break
 
             # --- 8. Regex Match ---
             if not value:

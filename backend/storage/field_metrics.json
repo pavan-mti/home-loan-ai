@@ -1,296 +1,303 @@
 {
   "general": {
-    "total_attempts": 2,
-    "successes": 0,
-    "failures": 2,
+    "total_attempts": 17,
+    "successes": 10,
+    "failures": 7,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.5647058823529411
   },
   "purpose_of_valuation": {
-    "total_attempts": 2,
-    "successes": 0,
-    "failures": 2,
+    "total_attempts": 17,
+    "successes": 10,
+    "failures": 7,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.5647058823529411
   },
   "inspection_date": {
-    "total_attempts": 2,
-    "successes": 2,
-    "failures": 0,
-    "validation_errors": 0,
-    "average_confidence": 0.7
+    "total_attempts": 17,
+    "successes": 8,
+    "failures": 9,
+    "validation_errors": 6,
+    "average_confidence": 0.3352941176470588
   },
   "valuation_date": {
-    "total_attempts": 2,
-    "successes": 2,
-    "failures": 0,
-    "validation_errors": 0,
-    "average_confidence": 0.7
+    "total_attempts": 17,
+    "successes": 8,
+    "failures": 9,
+    "validation_errors": 6,
+    "average_confidence": 0.32941176470588235
   },
   "list_of_documents": {
-    "total_attempts": 2,
-    "successes": 0,
-    "failures": 2,
+    "total_attempts": 17,
+    "successes": 10,
+    "failures": 7,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.5670588235294117
   },
   "name_of_the_owner_s": {
-    "total_attempts": 2,
-    "successes": 0,
+    "total_attempts": 17,
+    "successes": 15,
     "failures": 2,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.8523529411764704
   },
   "name_of_the_purchaser_s_and_his_their_address_es_with_phone_no_details_of_share_of_each_owner_in_case_of_joint_ownership": {
-    "total_attempts": 2,
-    "successes": 0,
-    "failures": 2,
+    "total_attempts": 17,
+    "successes": 2,
+    "failures": 15,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.11647058823529412
   },
   "brief_description_of_the_property_including_leasehold_freehold_etc": {
-    "total_attempts": 2,
-    "successes": 0,
-    "failures": 2,
+    "total_attempts": 17,
+    "successes": 8,
+    "failures": 9,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.31610908767833346
   },
   "prohibited_properties_details": {
-    "total_attempts": 2,
-    "successes": 0,
-    "failures": 2,
+    "total_attempts": 17,
+    "successes": 10,
+    "failures": 7,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.5729411764705883
   },
   "legal_opinion": {
-    "total_attempts": 2,
-    "successes": 2,
+    "total_attempts": 17,
+    "successes": 17,
     "failures": 0,
     "validation_errors": 0,
-    "average_confidence": 0.99
+    "average_confidence": 0.924705882352941
   },
   "mortgage_details": {
-    "total_attempts": 2,
-    "successes": 2,
+    "total_attempts": 24,
+    "successes": 24,
     "failures": 0,
     "validation_errors": 0,
-    "average_confidence": 0.99
+    "average_confidence": 0.8891666666666672
   },
   "ftl_buffer_zone": {
-    "total_attempts": 2,
-    "successes": 0,
-    "failures": 2,
+    "total_attempts": 24,
+    "successes": 7,
+    "failures": 17,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.26875
   },
   "location_of_property": {
-    "total_attempts": 2,
-    "successes": 0,
-    "failures": 2,
+    "total_attempts": 24,
+    "successes": 9,
+    "failures": 15,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.31844824709274155
   },
   "plot_no_survey_no": {
-    "total_attempts": 2,
-    "successes": 0,
+    "total_attempts": 24,
+    "successes": 22,
     "failures": 2,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.7333333333333337
   },
   "plot_no": {
-    "total_attempts": 2,
-    "successes": 0,
+    "total_attempts": 24,
+    "successes": 22,
     "failures": 2,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.8908333333333333
   },
   "t_s_no_village": {
-    "total_attempts": 2,
-    "successes": 0,
+    "total_attempts": 24,
+    "successes": 22,
     "failures": 2,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.8908333333333333
   },
   "ward_taluka": {
-    "total_attempts": 2,
-    "successes": 0,
+    "total_attempts": 25,
+    "successes": 23,
     "failures": 2,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.8939999999999999
   },
   "mandal_district": {
-    "total_attempts": 2,
-    "successes": 0,
+    "total_attempts": 25,
+    "successes": 23,
     "failures": 2,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.8939999999999999
   },
   "layout_approval": {
-    "total_attempts": 2,
-    "successes": 0,
-    "failures": 2,
+    "total_attempts": 24,
+    "successes": 7,
+    "failures": 17,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.2845833333333333
   },
   "layout_approving_authority": {
-    "total_attempts": 2,
-    "successes": 0,
-    "failures": 2,
+    "total_attempts": 24,
+    "successes": 17,
+    "failures": 7,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.6887500000000002
   },
   "genuineness_of_plan": {
-    "total_attempts": 2,
-    "successes": 0,
-    "failures": 2,
+    "total_attempts": 24,
+    "successes": 5,
+    "failures": 19,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.20208333333333336
   },
   "any_other_comments_by_our_empanelled_values_on_authentic_of_approved_plan": {
-    "total_attempts": 2,
-    "successes": 0,
-    "failures": 2,
+    "total_attempts": 24,
+    "successes": 5,
+    "failures": 19,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.20208333333333336
   },
   "postal_address_of_the_property": {
-    "total_attempts": 2,
-    "successes": 0,
+    "total_attempts": 24,
+    "successes": 22,
     "failures": 2,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.8974999999999996
   },
   "city_town": {
-    "total_attempts": 2,
-    "successes": 0,
-    "failures": 2,
+    "total_attempts": 24,
+    "successes": 19,
+    "failures": 5,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.7695833333333334
   },
   "property_classification": {
-    "total_attempts": 2,
-    "successes": 2,
-    "failures": 0,
+    "total_attempts": 97,
+    "successes": 45,
+    "failures": 52,
     "validation_errors": 0,
-    "average_confidence": 0.85
+    "average_confidence": 0.39333725193169455
   },
   "industrial_area": {
-    "total_attempts": 2,
-    "successes": 0,
-    "failures": 2,
+    "total_attempts": 24,
+    "successes": 15,
+    "failures": 9,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.49287363390489086
   },
   "coming_under_municipality_limits_village_panchayat_corporation": {
-    "total_attempts": 2,
-    "successes": 0,
+    "total_attempts": 24,
+    "successes": 22,
     "failures": 2,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.7687500000000002
   },
   "whether_covered_under_any_state_central_govt_enactments_e_g_urban_land_ceiling_act_or_notified_under_agency_area_scheduled_area_cantonment_area": {
-    "total_attempts": 2,
-    "successes": 0,
-    "failures": 2,
+    "total_attempts": 24,
+    "successes": 7,
+    "failures": 17,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.2845833333333333
   },
   "boundaries_of_the_flat": {
-    "total_attempts": 2,
-    "successes": 0,
+    "total_attempts": 24,
+    "successes": 22,
     "failures": 2,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.8274999999999998
   },
   "boundaries_north": {
-    "total_attempts": 2,
-    "successes": 0,
+    "total_attempts": 25,
+    "successes": 23,
     "failures": 2,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.8959999999999999
   },
   "boundaries_south": {
-    "total_attempts": 2,
-    "successes": 0,
+    "total_attempts": 26,
+    "successes": 24,
     "failures": 2,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.901153846153846
   },
   "boundaries_east": {
-    "total_attempts": 2,
-    "successes": 0,
+    "total_attempts": 25,
+    "successes": 23,
     "failures": 2,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.8988799999999998
   },
   "boundaries_west": {
-    "total_attempts": 2,
-    "successes": 0,
+    "total_attempts": 25,
+    "successes": 23,
     "failures": 2,
     "validation_errors": 0,
-    "average_confidence": 0.0
+    "average_confidence": 0.8959999999999999
   },
   "electric_meter_number": {
-    "total_attempts": 46,
-    "successes": 46,
+    "total_attempts": 61,
+    "successes": 61,
     "failures": 0,
     "validation_errors": 0,
-    "average_confidence": 0.9699999999999993
+    "average_confidence": 0.9699999999999992
   },
   "transformer_id": {
-    "total_attempts": 21,
-    "successes": 21,
+    "total_attempts": 26,
+    "successes": 26,
     "failures": 0,
     "validation_errors": 0,
-    "average_confidence": 0.9699999999999999
+    "average_confidence": 0.9699999999999996
   },
   "owner_name": {
-    "total_attempts": 46,
-    "successes": 26,
-    "failures": 20,
+    "total_attempts": 62,
+    "successes": 37,
+    "failures": 25,
     "validation_errors": 0,
-    "average_confidence": 0.5022405413613802
+    "average_confidence": 0.5323074984294108
   },
   "factory_license_number": {
-    "total_attempts": 12,
-    "successes": 12,
+    "total_attempts": 17,
+    "successes": 17,
     "failures": 0,
     "validation_errors": 0,
     "average_confidence": 0.9700000000000001
   },
   "transformer_number": {
-    "total_attempts": 12,
-    "successes": 12,
+    "total_attempts": 17,
+    "successes": 17,
     "failures": 0,
     "validation_errors": 0,
     "average_confidence": 0.9700000000000001
   },
   "consumer_id": {
-    "total_attempts": 12,
-    "successes": 12,
+    "total_attempts": 17,
+    "successes": 17,
     "failures": 0,
     "validation_errors": 0,
     "average_confidence": 0.9700000000000001
   },
   "survey_number": {
-    "total_attempts": 12,
-    "successes": 4,
-    "failures": 8,
+    "total_attempts": 18,
+    "successes": 5,
+    "failures": 13,
     "validation_errors": 0,
-    "average_confidence": 0.255059041315065
+    "average_confidence": 0.22392824976559889
   },
   "gst_number": {
-    "total_attempts": 12,
+    "total_attempts": 17,
     "successes": 6,
-    "failures": 6,
-    "validation_errors": 0,
-    "average_confidence": 0.34077168139078284
-  },
-  "village": {
-    "total_attempts": 12,
-    "successes": 1,
     "failures": 11,
     "validation_errors": 0,
-    "average_confidence": 0.047913361881293505
+    "average_confidence": 0.24054471627584673
+  },
+  "village": {
+    "total_attempts": 18,
+    "successes": 2,
+    "failures": 16,
+    "validation_errors": 0,
+    "average_confidence": 0.08583113014308456
+  },
+  "door_number": {
+    "total_attempts": 1,
+    "successes": 1,
+    "failures": 0,
+    "validation_errors": 0,
+    "average_confidence": 0.97
   }
 }

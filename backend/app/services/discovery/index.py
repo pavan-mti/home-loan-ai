@@ -52,7 +52,9 @@ class DocumentIndex:
             if match:
                 key = match.group(1).strip()
                 val = match.group(2).strip()
-                if len(key) >= 2 and len(val) >= 2:
+                # Clean leading punctuation dangles from val
+                val = re.sub(r"^[:\-–—=\s]+", "", val).strip()
+                if len(key) >= 2 and len(val) >= 2 and not key.lower().endswith("and between"):
                     pairs.append({
                         "label": key,
                         "value": val,

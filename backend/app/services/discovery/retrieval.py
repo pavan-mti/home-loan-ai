@@ -3,31 +3,40 @@ import re
 from ..candidate_model import Candidate
 from .repository import CandidateRepository
 
+WEAK_TOKENS = {"name", "number", "area", "address", "no", "date", "id", "code", "details", "information", "value", "s", "es"}
+
+STRONG_TOKENS = {
+    "owner", "survey", "village", "industrial", "residential", "applicant", "purchaser",
+    "door", "plot", "ward", "taluka", "mandal", "district", "city", "town", "layout",
+    "authority", "prohibited", "opinion", "inspection", "valuation", "buyer", "seller",
+    "vendor", "vendee", "builder", "developer", "agreement", "deed", "permit", "permission",
+    "mortgage", "extent", "built", "plinth", "carpet", "land", "tenure"
+}
+
+NEGATIVE_INDICATORS = {
+    "door": ["ltd", "pvt", "company", "bank", "synergy", "synergy pvt", "corporation"],
+    "plot": ["ltd", "pvt", "company", "bank"],
+    "survey": ["ltd", "pvt", "company", "bank"],
+    "owner": ["ltd", "pvt", "bank"],
+    "purchaser": ["ltd", "pvt", "bank"]
+}
+
 def is_false_semantic_positive(query: str, label: str) -> bool:
     q_words = {w.lower() for w in re.split(r"\s+", query) if w.strip()}
     l_words = {w.lower() for w in re.split(r"\s+", label) if w.strip()}
     
-    # Generic suffix words
-    generic = {"number", "no", "id", "code", "name", "date", "details", "information", "value"}
+    q_specific = q_words - WEAK_TOKENS
+    l_specific = l_words - WEAK_TOKENS
     
-    # Non-generic words (specific words)
-    q_specific = q_words - generic
-    l_specific = l_words - generic
-    
-    # If both have specific words, but they share NO words and no word is a substring,
-    # then it's highly likely to be a false semantic match unless they are synonyms.
     if q_specific and l_specific:
-        # Check for exact intersection
         if q_specific & l_specific:
             return False
             
-        # Check for substring overlap (e.g. "meter" in "electric_meter")
         for qw in q_specific:
             for lw in l_specific:
                 if qw in lw or lw in qw:
                     return False
                     
-        # Check for known synonym pairs
         synonyms = [
             {"owner", "applicant", "borrower", "proprietor", "landlord", "lessor"},
             {"purchaser", "buyer", "vendee"},
@@ -41,8 +50,19 @@ def is_false_semantic_positive(query: str, label: str) -> bool:
             if any(qw in syn_set for qw in q_specific) and any(lw in syn_set for lw in l_specific):
                 return False
                 
-        return True # It is a false positive
+        return True
         
+    return False
+
+def has_negative_indicator(placeholder: str, candidate: Candidate) -> bool:
+    ph_lc = placeholder.lower()
+    val_lc = candidate.value.lower()
+    
+    for key_term, negatives in NEGATIVE_INDICATORS.items():
+        if key_term in ph_lc:
+            for neg in negatives:
+                if re.search(rf"\b{re.escape(neg)}\b", val_lc):
+                    return True
     return False
 
 class CandidateRetrieval:
@@ -55,6 +75,9 @@ class CandidateRetrieval:
             return []
 
         placeholder_lc = placeholder.strip().lower()
+        ph_words = {w for w in re.split(r"\W+", placeholder_lc) if w}
+        ph_strong = ph_words & STRONG_TOKENS
+
         retrieved = []
 
         from ..scorers import SemanticScorer, FuzzyScorer
@@ -62,6 +85,10 @@ class CandidateRetrieval:
         fuzzy_scorer = FuzzyScorer()
 
         for candidate in repository.get_all():
+            # Apply negative indicator check
+            if has_negative_indicator(placeholder, candidate):
+                continue
+
             # Exact Match
             if candidate.label == placeholder:
                 retrieved.append(candidate)
@@ -75,6 +102,12 @@ class CandidateRetrieval:
 
             # Check if it is a false positive
             if is_false_semantic_positive(placeholder, candidate.label):
+                continue
+
+            # Strong Token Overlap Gate
+            cand_words = {w for w in re.split(r"\W+", cand_label_lc) if w}
+            cand_strong = cand_words & STRONG_TOKENS
+            if ph_strong and cand_strong and not (ph_strong & cand_strong):
                 continue
 
             # Fuzzy Match

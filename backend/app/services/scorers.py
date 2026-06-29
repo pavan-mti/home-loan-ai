@@ -76,8 +76,7 @@ class FuzzyScorer(BaseScorer):
         q_lc = query.lower()
         lbl_lc = candidate.label.lower()
         sort_ratio = fuzz.token_sort_ratio(q_lc, lbl_lc) / 100.0
-        set_ratio = fuzz.token_set_ratio(q_lc, lbl_lc) / 100.0
-        return float((sort_ratio + set_ratio) / 2.0)
+        return float(sort_ratio)
 
 
 class OCRConfidenceScorer(BaseScorer):

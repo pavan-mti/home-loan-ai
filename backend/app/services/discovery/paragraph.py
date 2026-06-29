@@ -9,7 +9,7 @@ class ParagraphDiscoveryStrategy(BaseDiscoveryStrategy):
         candidates = []
         # Generic relational patterns in narrative text
         pattern_rel = re.compile(
-            r"\b(belongs\s+to|represented\s+by|resident\s+of|referred\s+to\s+as|dated|amounting\s+to|is\s+a|is\s+the|is|was|bearing|having|registered\s+as|between|leased\s+to|sold\s+to|purchased\s+by)\b",
+            r"\b(belongs\s+to|represented\s+by|resident\s+of|referred\s+to\s+as|amounting\s+to|bearing\s+no|registered\s+as|leased\s+to|sold\s+to|purchased\s+by)\b",
             re.IGNORECASE
         )
 

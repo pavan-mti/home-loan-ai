@@ -25,26 +25,49 @@ class RenderableValue:
 
 
 class ReportGenerator:
-    def generate_docx(self, template_path: str | None, template_content_json: dict[str, Any], field_values: dict[str, Any], output_path: Path, header_image_path: Path | None = None) -> Path:
+    def generate_docx(self, template_path: str | None, template_content_json: dict[str, Any], field_values: dict[str, Any], output_path: Path, header_image_path: Path | None = None, certificate_text: str | None = None) -> Path:
         resolved_template_path = self._resolve_template_path(template_path)
         if resolved_template_path is None:
             raise ValueError("original_docx_url is required to generate a template-preserving report")
 
+        # Load template for rendering and clone reference for structural benchmark validation
+        template_doc = Document(str(resolved_template_path))
         document = Document(str(resolved_template_path))
-        
-        if header_image_path and header_image_path.exists() and header_image_path.is_file():
-            if document.paragraphs:
-                p = document.paragraphs[0].insert_paragraph_before()
-            else:
-                p = document.add_paragraph()
-            from docx.enum.text import WD_ALIGN_PARAGRAPH
-            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            r = p.add_run()
-            from docx.shared import Inches
-            r.add_picture(str(header_image_path), width=Inches(6.5))
 
-        resolved_values = self._resolve_field_values(template_content_json, field_values)
-        self._replace_placeholders(document, resolved_values)
+        from .docx import HeaderEngine, CertificateEngine, TemplateRenderer, ValidationEngine
+
+        # Phase 2: Header Graphic Engine
+        HeaderEngine.replace_header(document, header_image_path)
+
+        # Collect known template tokens from DB template content JSON
+        known_tokens: list[str] = []
+        for field in self._iter_template_fields(template_content_json):
+            fc = self._clean_value(field.get("field_code"))
+            lbl = self._clean_value(field.get("label"))
+            dyn = self._clean_value(field.get("dynamic_value"))
+            if fc: known_tokens.append(fc)
+            if lbl:
+                known_tokens.append(lbl)
+                slug = self._slugify(lbl)
+                if slug: known_tokens.append(slug)
+            if dyn: known_tokens.append(dyn)
+
+        reserved_headers = {"HEADER", "HEADER_IMAGE", "header", "header_image", "HEADER_LOGO", "header_logo"}
+        for key in field_values.keys():
+            cleaned_key = self._clean_value(key)
+            if cleaned_key and cleaned_key not in reserved_headers:
+                known_tokens.append(cleaned_key)
+
+        known_tokens = [t for t in known_tokens if t not in reserved_headers]
+
+        # Render Completion Certificate (before valuation tables)
+        CertificateEngine.render_certificate(document, certificate_text, known_tokens, field_values)
+
+        # Phase 1: In-Place Character-Stream Template Renderer
+        TemplateRenderer.render_document(document, known_tokens, field_values)
+
+        # Phase 3: Validation Engine & Structural Guards
+        ValidationEngine.validate_generation(template_doc, document, known_tokens)
 
         final_output_path = self._resolve_output_path(output_path)
         final_output_path.parent.mkdir(parents=True, exist_ok=True)

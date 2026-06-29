@@ -3,6 +3,7 @@ from ..candidate_model import Candidate
 from .index import DocumentIndex
 from .repository import CandidateRepository
 
+from .quality_gate import CandidateQualityGate
 from .key_value import KeyValueDiscoveryStrategy
 from .table import TableDiscoveryStrategy
 from .section import SectionDiscoveryStrategy
@@ -11,6 +12,7 @@ from .paragraph import ParagraphDiscoveryStrategy
 
 class CandidateDiscoveryEngine:
     def __init__(self):
+        self.quality_gate = CandidateQualityGate()
         self.strategies = [
             KeyValueDiscoveryStrategy(),
             TableDiscoveryStrategy(),
@@ -29,7 +31,7 @@ class CandidateDiscoveryEngine:
                 print(f"Error in discovery strategy {strategy.__class__.__name__}: {e}")
 
         # Strategy 10: Apply Quality Filters
-        filtered = [c for c in all_candidates if self._is_valid_candidate(c)]
+        filtered = [c for c in all_candidates if self.quality_gate.validate(c)]
 
         # Strategy 7: Merge duplicate candidates
         merged = self._merge_duplicates(filtered)
@@ -37,27 +39,8 @@ class CandidateDiscoveryEngine:
         return CandidateRepository(merged)
 
     def _is_valid_candidate(self, candidate: Candidate) -> bool:
-        val = (candidate.value or "").strip()
-        if not val:
-            return False
+        return self.quality_gate.validate(candidate)
 
-        # Discard punctuation-only
-        if all(c in '.,:;!?-_–—=+|/\\()[]{}#*`~ ' for c in val):
-            return False
-
-        # Discard very short garbage (length < 2 and not a digit)
-        if len(val) < 2 and not val.isdigit():
-            return False
-
-        # Discard obvious OCR artefacts/long repetitive characters
-        if len(val) > 250:
-            return False
-
-        # Check if it has at least one alphanumeric character
-        if not any(c.isalnum() for c in val):
-            return False
-
-        return True
 
     def _merge_duplicates(self, candidates: list[Candidate]) -> list[Candidate]:
         grouped = {}

@@ -27,7 +27,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import Session
 
 from .database import Base, engine, get_db
-from .dependencies import get_template_service
+from .dependencies import get_template_service, get_header_service
 from .models import AuditLog, Freelancer, Hlc, PermissionDocument, SessionToken, Valuer, HeaderTemplate, Template, CompletionCertificateTemplate
 from .schemas import (
     ExtractionResponse,
@@ -51,6 +51,8 @@ from .schemas import (
     CompletionCertificateUpdate,
     MapSavedFieldsRequest,
     TemplateFieldsGetResponse,
+    GenerateReportRequest,
+    RenderingOptions,
 )
 from .security import create_token, hash_password, verify_password
 from .services.documents import STORAGE_ROOT, analyze_document, extract_permission_number, extract_text_from_upload, save_upload, flatten_results
@@ -89,9 +91,20 @@ def _ensure_database() -> None:
         if "field_type" not in tf_columns:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE template_fields ADD COLUMN field_type VARCHAR(50) DEFAULT 'dynamic' NOT NULL"))
-        if "static_value" not in tf_columns:
+        ht_columns = [col["name"] for col in inspector.get_columns("header_templates")]
+        if "image_width" not in ht_columns:
             with engine.begin() as conn:
-                conn.execute(text("ALTER TABLE template_fields ADD COLUMN static_value VARCHAR(1000)"))
+                conn.execute(text("ALTER TABLE header_templates ADD COLUMN image_width INTEGER"))
+        if "image_height" not in ht_columns:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE header_templates ADD COLUMN image_height INTEGER"))
+        if "display_order" not in ht_columns:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE header_templates ADD COLUMN display_order INTEGER DEFAULT 0 NOT NULL"))
+        if "is_default" not in ht_columns:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE header_templates ADD COLUMN is_default BOOLEAN DEFAULT FALSE NOT NULL"))
+
 
         # One-time data migration for existing TemplateFields
         from .database import SessionLocal
@@ -148,27 +161,27 @@ def _ensure_database() -> None:
             cert = db.query(CompletionCertificateTemplate).first()
             if not cert:
                 default_text = (
-                    "To\tDate:{Date}\n"
-                    "STATE BANK OF INDIA\n"
-                    "RACPC (HLC)\n"
-                    "HYDERABAD.\n\n"
+                    "To\tDate: {{date}}\n"
+                    "{{bank_name}}\n"
+                    "{{branch_name}}\n"
+                    "{{city}}\n\n"
                     "                           COMPLETION CERTIFICATE\n\n"
-                    "This is 1. {Owner Name},\n"
-                    " S/O. {Father Name}\n"
-                    "2. {Co-owner Name},\n"
-                    " W/O. {Co-owner Husband Name}\n"
-                    "Mobile:{Mobile Number}\n\n"
-                    "Completed the {Property Description}, Constructed on Open Plot bearing No.{Plot No}, "
-                    "admeasuring an extent of {Area Sq Yds} Sq.Yds or {Area Sq Mtrs} Sq.Mtrs, in Survey No's.{Survey Nos}, "
-                    "having total built up area of {Built Up Area} Sq.Feet ({Built Up Area Details}), roof covered with R.C.C., "
-                    "as shown in the Plan annexed herewith, situated at {Village} Village Under the Municipal Limits of "
-                    "{Municipality} Municipality, {Mandal} Mandal, {District} District, Telangana State,Pin:{Pin Code}\n"
-                    "We have inspected the Premises on {Inspection Date} and observed that the Building works and interior works "
+                    "This is 1. {{owner_name}},\n"
+                    " S/O. {{father_name}}\n"
+                    "2. {{co_owner_name}},\n"
+                    " W/O. {{co_owner_husband_name}}\n"
+                    "Mobile: {{mobile_number}}\n\n"
+                    "Completed the {{property_description}}, Constructed on Open Plot bearing No. {{plot_number}}, "
+                    "admeasuring an extent of {{area_sq_yds}} Sq.Yds or {{area_sq_mtrs}} Sq.Mtrs, in Survey No's. {{survey_number}}, "
+                    "having total built up area of {{built_up_area}} Sq.Feet, roof covered with R.C.C., "
+                    "as shown in the Plan annexed herewith, situated at {{village}} Village Under the Municipal Limits of "
+                    "{{municipality}} Municipality, {{mandal}} Mandal, {{district}} District, Telangana State, Pin: {{pin_code}}\n"
+                    "We have inspected the Premises on {{inspection_date}} and observed that the Building works and interior works "
                     "are completed and ready to occupy.\n\n"
                     "Note: \n"
                     "1) The subjected house is fully completed.\n"
                     "2) As on date of inspection this property was ready for occupation.\n"
-                    "3) This certificate is issued for completion purpose only\n"
+                    "3) This certificate is issued for completion purpose only.\n"
                     "4) This certificate is issued irrespective of valuation & plan approved."
                 )
                 db.add(CompletionCertificateTemplate(id=1, template_text=default_text))
@@ -585,29 +598,33 @@ def map_template_fields(
 @app.post("/templates/{template_id}/generate-report")
 def generate_report(
     template_id: int,
-    field_values: dict[str, Any],
-    header_id: int | None = Query(default=None),
+    payload: GenerateReportRequest,
     db: Session = Depends(get_db),
-    template_service: TemplateService = Depends(get_template_service)
+    template_service: TemplateService = Depends(get_template_service),
+    header_service=Depends(get_header_service),
 ) -> dict[str, Any]:
     header_image_path = None
-    if header_id:
-        from .models import HeaderTemplate
-        header_temp = db.get(HeaderTemplate, header_id)
+    target_header_id = payload.rendering_options.header_id
+
+    if target_header_id:
+        header_temp = header_service.get_header(target_header_id)
         if header_temp:
             from pathlib import Path
             header_image_path = STORAGE_ROOT / "headers" / Path(header_temp.image_path).name
     else:
-        # Fallback to template's default header
-        template = template_service.repository.get_template(template_id)
-        if template and template.header_template_id:
-            from .models import HeaderTemplate
-            header_temp = db.get(HeaderTemplate, template.header_template_id)
-            if header_temp:
-                from pathlib import Path
-                header_image_path = STORAGE_ROOT / "headers" / Path(header_temp.image_path).name
+        # Fallback to default header if set
+        default_temp = header_service.get_default_header()
+        if default_temp:
+            from pathlib import Path
+            header_image_path = STORAGE_ROOT / "headers" / Path(default_temp.image_path).name
 
-    output_path = template_service.generate_report(template_id, field_values, header_image_path=header_image_path)
+    cert_text = None
+    if payload.rendering_options.certificate_enabled:
+        cert = db.query(CompletionCertificateTemplate).first()
+        if cert:
+            cert_text = cert.template_text
+
+    output_path = template_service.generate_report(template_id, payload.field_values, header_image_path=header_image_path, certificate_text=cert_text)
     try:
         relative_url = output_path.relative_to(STORAGE_ROOT).as_posix()
         report_url = f"/storage/{relative_url}"
@@ -674,9 +691,12 @@ async def generate_report_endpoint(
             from pathlib import Path
             header_image_path = STORAGE_ROOT / "headers" / Path(header_temp.image_path).name
 
+    cert = db.query(CompletionCertificateTemplate).first()
+    cert_text = cert.template_text if cert else None
+
     import uuid
     output_name = f"report_{uuid.uuid4().hex}.docx"
-    generated_file = template_service.generate_report(template_id, field_values, output_name=output_name, header_image_path=header_image_path)
+    generated_file = template_service.generate_report(template_id, field_values, output_name=output_name, header_image_path=header_image_path, certificate_text=cert_text)
 
     return FileResponse(
         path=str(generated_file),
@@ -855,138 +875,89 @@ def list_reports() -> dict[str, list[Any]]:
 
 # Header Templates Endpoints
 @app.get("/header-templates", response_model=list[HeaderTemplateResponse])
-def list_header_templates(db: Session = Depends(get_db), current_user: Freelancer = Depends(get_current_user)) -> list[HeaderTemplate]:
-    return db.query(HeaderTemplate).all()
+def list_header_templates(
+    header_service=Depends(get_header_service),
+    current_user: Freelancer = Depends(get_current_user)
+) -> list[HeaderTemplate]:
+    return header_service.list_headers()
+
+
+@app.get("/header-templates/{header_id}", response_model=HeaderTemplateResponse)
+def get_header_template(
+    header_id: int,
+    header_service=Depends(get_header_service),
+    current_user: Freelancer = Depends(get_current_user)
+) -> HeaderTemplate:
+    header = header_service.get_header(header_id)
+    if not header:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Header template not found")
+    return header
 
 
 @app.post("/header-templates", response_model=HeaderTemplateResponse, status_code=status.HTTP_201_CREATED)
 async def create_header_template(
     header_name: str = Form(...),
+    display_order: int = Form(default=0),
     is_active: bool = Form(default=True),
+    is_default: bool = Form(default=False),
     file: UploadFile = File(...),
-    db: Session = Depends(get_db),
+    header_service=Depends(get_header_service),
     current_user: Freelancer = Depends(get_current_user)
 ) -> HeaderTemplate:
-    headers_dir = STORAGE_ROOT / "headers"
-    headers_dir.mkdir(parents=True, exist_ok=True)
-    
-    import uuid
-    from pathlib import Path
-    suffix = Path(file.filename or "header.png").suffix.lower()
-    if suffix not in {".png", ".jpg", ".jpeg"}:
-        raise HTTPException(status_code=400, detail="Only JPG, JPEG, and PNG files are allowed")
-        
-    # 5MB size limit validation
-    content = await file.read()
-    if len(content) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File size must be less than 5MB")
-    await file.seek(0)
-
-    filename = f"{uuid.uuid4().hex}{suffix}"
-    saved_path = headers_dir / filename
-    
-    with saved_path.open("wb") as buffer:
-        import shutil
-        shutil.copyfileobj(file.file, buffer)
-        
-    image_path = f"/storage/headers/{filename}"
-    
-    header = HeaderTemplate(
+    return await header_service.create_header(
         header_name=header_name,
-        image_path=image_path,
-        is_active=is_active
+        file=file,
+        display_order=display_order,
+        is_active=is_active,
+        is_default=is_default,
     )
-    db.add(header)
-    db.commit()
-    db.refresh(header)
-    return header
 
 
 @app.put("/header-templates/{header_id}", response_model=HeaderTemplateResponse)
 async def update_header_template(
     header_id: int,
     header_name: str | None = Form(default=None),
+    display_order: int | None = Form(default=None),
     is_active: bool | None = Form(default=None),
+    is_default: bool | None = Form(default=None),
     file: UploadFile | None = File(default=None),
-    db: Session = Depends(get_db),
+    header_service=Depends(get_header_service),
     current_user: Freelancer = Depends(get_current_user)
 ) -> HeaderTemplate:
-    header = db.get(HeaderTemplate, header_id)
-    if not header:
-        raise HTTPException(status_code=404, detail="Header template not found")
-        
-    if header_name is not None:
-        header.header_name = header_name
-    if is_active is not None:
-        header.is_active = is_active
-        
-    if file is not None:
-        from pathlib import Path
-        suffix = Path(file.filename or "header.png").suffix.lower()
-        if suffix not in {".png", ".jpg", ".jpeg"}:
-            raise HTTPException(status_code=400, detail="Only JPG, JPEG, and PNG files are allowed")
-            
-        # 5MB size limit validation
-        content = await file.read()
-        if len(content) > 5 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="File size must be less than 5MB")
-        await file.seek(0)
+    return await header_service.update_header(
+        header_id,
+        header_name=header_name,
+        file=file,
+        display_order=display_order,
+        is_active=is_active,
+        is_default=is_default,
+    )
 
-        try:
-            old_path = STORAGE_ROOT / "headers" / Path(header.image_path).name
-            if old_path.exists() and old_path.is_file():
-                old_path.unlink()
-        except Exception:
-            pass
-            
-        headers_dir = STORAGE_ROOT / "headers"
-        headers_dir.mkdir(parents=True, exist_ok=True)
-        import uuid
-        filename = f"{uuid.uuid4().hex}{suffix}"
-        saved_path = headers_dir / filename
-        
-        with saved_path.open("wb") as buffer:
-            import shutil
-            shutil.copyfileobj(file.file, buffer)
-            
-        header.image_path = f"/storage/headers/{filename}"
-        
-    header.updated_at = datetime.utcnow()
-    db.commit()
-    db.refresh(header)
-    return header
+
+@app.put("/header-templates/{header_id}/set-default", response_model=HeaderTemplateResponse)
+def set_default_header_template(
+    header_id: int,
+    header_service=Depends(get_header_service),
+    current_user: Freelancer = Depends(get_current_user)
+) -> HeaderTemplate:
+    return header_service.set_default(header_id)
 
 
 @app.delete("/header-templates/{header_id}")
 def delete_header_template(
     header_id: int,
-    db: Session = Depends(get_db),
+    header_service=Depends(get_header_service),
     current_user: Freelancer = Depends(get_current_user)
 ) -> dict[str, str]:
-    header = db.get(HeaderTemplate, header_id)
-    if not header:
-        raise HTTPException(status_code=404, detail="Header template not found")
-        
-    try:
-        from pathlib import Path
-        img_file_path = STORAGE_ROOT / "headers" / Path(header.image_path).name
-        if img_file_path.exists() and img_file_path.is_file():
-            img_file_path.unlink()
-    except Exception:
-        pass
-        
-    db.query(Template).filter(Template.header_template_id == header_id).update({Template.header_template_id: None})
-    
-    db.delete(header)
-    db.commit()
-    return {"message": "Header template deleted"}
+    return header_service.delete_header(header_id)
+
 
 
 @app.get("/completion-certificate", response_model=CompletionCertificateResponse)
 def get_completion_certificate(db: Session = Depends(get_db), current_user: Freelancer = Depends(get_current_user)) -> CompletionCertificateResponse:
     cert = db.query(CompletionCertificateTemplate).first()
     if not cert:
-        default_text = "To\tDate:{Date}\nSTATE BANK OF INDIA\nRACPC (HLC)\nHYDERABAD.\n\n                           COMPLETION CERTIFICATE\n\nThis is 1. {Owner Name},\n S/O. {Father Name}\n2. {Co-owner Name},\n W/O. {Co-owner Husband Name}\nMobile:{Mobile Number}\n\nCompleted the {Property Description}, Constructed on Open Plot bearing No.{Plot No}, admeasuring an extent of {Area Sq Yds} Sq.Yds or {Area Sq Mtrs} Sq.Mtrs, in Survey No's.{Survey Nos}, having total built up area of {Built Up Area} Sq.Feet ({Built Up Area Details}), roof covered with R.C.C., as shown in the Plan annexed herewith, situated at {Village} Village Under the Municipal Limits of {Municipality} Municipality, {Mandal} Mandal, {District} District, Telangana State,Pin:{Pin Code}\nWe have inspected the Premises on {Inspection Date} and observed that the Building works and interior works are completed and ready to occupy.\n\nNote: \n1) The subjected house is fully completed.\n2) As on date of inspection this property was ready for occupation.\n3) This certificate is issued for completion purpose only\n4) This certificate is issued irrespective of valuation & plan approved."
+        default_text = "To\tDate: {{date}}\n{{bank_name}}\n{{branch_name}}\n{{city}}\n\n                           COMPLETION CERTIFICATE\n\nThis is 1. {{owner_name}},\n S/O. {{father_name}}\n2. {{co_owner_name}},\n W/O. {{co_owner_husband_name}}\nMobile: {{mobile_number}}\n\nCompleted the {{property_description}}, Constructed on Open Plot bearing No. {{plot_number}}, admeasuring an extent of {{area_sq_yds}} Sq.Yds or {{area_sq_mtrs}} Sq.Mtrs, in Survey No's. {{survey_number}}, having total built up area of {{built_up_area}} Sq.Feet, roof covered with R.C.C., as shown in the Plan annexed herewith, situated at {{village}} Village Under the Municipal Limits of {{municipality}} Municipality, {{mandal}} Mandal, {{district}} District, Telangana State, Pin: {{pin_code}}\nWe have inspected the Premises on {{inspection_date}} and observed that the Building works and interior works are completed and ready to occupy.\n\nNote: \n1) The subjected house is fully completed.\n2) As on date of inspection this property was ready for occupation.\n3) This certificate is issued for completion purpose only.\n4) This certificate is issued irrespective of valuation & plan approved."
         cert = CompletionCertificateTemplate(id=1, template_text=default_text)
         db.add(cert)
         db.commit()

@@ -205,9 +205,24 @@ class HeaderTemplateResponse(BaseModel):
     id: int
     header_name: str
     image_path: str
+    image_width: int | None = None
+    image_height: int | None = None
+    display_order: int = 0
     is_active: bool
+    is_default: bool = False
     created_at: datetime | None = None
     updated_at: datetime | None = None
+
+
+class RenderingOptions(BaseModel):
+    header_id: int | None = None
+    certificate_enabled: bool = True
+
+
+class GenerateReportRequest(BaseModel):
+    field_values: dict[str, Any] = Field(default_factory=dict)
+    rendering_options: RenderingOptions = Field(default_factory=RenderingOptions)
+
 
 
 class CompletionCertificateResponse(BaseModel):

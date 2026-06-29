@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import os
 import re
 from typing import Any
 from .gemini_service import GeminiService
 from .candidate_model import Candidate
 from .candidate_ranker import CandidateRanker
 from .discovery.repository import CandidateRepository
+
+MIN_ACCEPTABLE_SCORE = float(os.getenv("MIN_ACCEPTABLE_SCORE", "0.65"))
 
 def strategy_exact(placeholder: str, search_labels: list[str], lines: list[str]) -> list[dict[str, Any]]:
     candidates = []
@@ -302,7 +305,22 @@ def extract_placeholder(
     from .discovery.retrieval import CandidateRetrieval
     retrieval = CandidateRetrieval()
     retrieved_candidates = retrieval.retrieve(placeholder_clean, candidate_repo)
+    print("\n" + "=" * 80)
+    print(f"PLACEHOLDER: {placeholder_clean}")
+    print("=" * 80)
 
+    print("\nRETRIEVED CANDIDATES:")
+
+    if not retrieved_candidates:
+        print("No candidates retrieved.")
+    else:
+        for i, c in enumerate(retrieved_candidates, 1):
+            print(f"\nCandidate #{i}")
+            print(f"  Label      : {c.label}")
+            print(f"  Value      : {c.value}")
+            print(f"  Strategy   : {c.discovery_strategy}")
+            print(f"  OCR Conf   : {c.ocr_confidence}")
+            print(f"  Page       : {c.page}")
     # 3. Add placeholder-specific Regex candidates
     regex_cands = strategy_regex(placeholder_clean, document_text)
     for rc in regex_cands:
@@ -375,6 +393,24 @@ def extract_placeholder(
 
     best = ranked_objs[0]
 
+    print("\nRANKING RESULTS")
+
+    for i, c in enumerate(ranked_objs, 1):
+        print(f"\nRank #{i}")
+        print(f"  Label       : {c.label}")
+        print(f"  Value       : {c.value}")
+        print(f"  Semantic    : {c.semantic_score:.3f}")
+        print(f"  Fuzzy       : {c.fuzzy_score:.3f}")
+        print(f"  Context     : {c.context_score:.3f}")
+        print(f"  Validation  : {c.validation_score:.3f}")
+        print(f"  OCR         : {c.ocr_confidence:.3f}")
+        print(f"  Final Score : {c.final_score:.3f}")
+        print("\nWINNER")
+        print(f"  Label : {best.label}")
+        print(f"  Value : {best.value}")
+        print(f"  Score : {best.final_score:.3f}")
+        print("=" * 80 + "\n")
+
     # Serialize ranked candidates to dicts
     ranked_candidates_serialized = []
     for c in ranked_objs:
@@ -396,6 +432,30 @@ def extract_placeholder(
             "final_score": c.final_score,
             "explanation": c.explanation
         })
+
+    if best.final_score < MIN_ACCEPTABLE_SCORE:
+        return {
+            "value": None,
+            "label": None,
+            "confidence": 0.0,
+            "needs_review": True,
+            "strategy": None,
+            "matched_label": None,
+            "source_line": None,
+            "reason": f"Best candidate score ({best.final_score:.3f}) below threshold {MIN_ACCEPTABLE_SCORE}",
+            "scores": {
+                "semantic": best.semantic_score,
+                "fuzzy": best.fuzzy_score,
+                "context": best.context_score,
+                "validation": best.validation_score,
+                "ocr": best.ocr_confidence
+            },
+            "explanation": f"Best candidate had low score: {best.explanation}",
+            "ranked_candidates": ranked_candidates_serialized,
+            "metadata": {
+                "all_candidates": ranked_candidates_serialized
+            }
+        }
 
     compat_strategy = get_compatibility_strategy(best, placeholder_clean)
     return {
